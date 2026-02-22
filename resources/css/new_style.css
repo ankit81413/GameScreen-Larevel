@@ -1,0 +1,203 @@
+.indexed_wallpaper {
+    margin: 8px;
+    padding: 0px;
+    background-color: #ff7b00;
+    background-color: #111017;
+    border: 2.5px solid #ff9900;
+    border-radius: 25px;
+    overflow: hidden;
+    display: none;
+}
+
+.indexed_heading {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+
+
+.indexed_heading h1 {
+    color: #ff9900;
+    color: white;
+    border-left: 4px solid #ff7b00;
+    border-radius: 3px;
+    padding-left: 10px;
+    margin: 0px 10px;
+
+}
+
+.indexed_a {
+    color: #ff9900;
+    font-size: 18px;
+    height: 30px;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 50%;
+    border: 3px solid #ff9900;
+    /* margin-right: 5px; */
+}
+
+.indexed_container {
+    background-color: white;
+    padding: 16px 8px;
+    border-radius: 20px;
+    overflow: hidden;
+}
+.outer_pading{
+    border-radius: 15px;
+    overflow: hidden;
+}
+.indexed_container_padding {
+    overflow-x: scroll;
+    display: flex;
+
+}
+
+.indexed_container_padding::-webkit-scrollbar {
+    background-color: rgb(255, 220, 220);
+    height: 4px;
+    border-radius: 4px;
+    max-width: 50%;
+}
+
+.indexed_container_padding::-webkit-scrollbar-thumb {
+    background-color: #ff7b00;
+    height: 4px;
+    border-radius: 4px;
+}
+
+.indexed_wallpaper_land {
+    margin: 0px 8px;
+    position: relative;
+}
+
+.indexed_wallpaper_img {
+    height: 180px;
+    border-radius: 20px;
+}
+
+
+
+.indexed_i {
+    height: 30px;
+    width: 30px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #ff9900;
+    color: #ff9900;
+    border-radius: 50%;
+    margin: 15px;
+    font-size: 16px;
+    padding: 5px;
+    padding-left: 8px;
+}
+
+.indexed_image img{
+    height: 180px;
+    border-radius: 20px;
+}
+
+.banner_fullscreen{
+    height: 30px;
+    width: 30px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #ff9900;
+    color: #ff9900;
+    border-radius: 50%;
+    margin: 15px;
+    font-size: 16.5px;
+    padding: 5px;
+    padding-left: 6px;
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    margin: 10px;
+}
+
+
+@media screen and (max-width: 600px) {
+    #indexed_wallpaper_1 {
+        margin: 6px;
+        border-radius: 12px;
+    }
+
+    .indexed_heading {
+        padding: 10px;
+    }
+
+
+    .indexed_heading h1 {
+        border-left: 3px solid #ff7b00;
+        border-radius: 2px;
+        font-size: 20px;
+        margin: 0px 5px;
+
+    }
+
+    .indexed_a {
+        font-size: 12px;
+        height: 22px;
+        width: 22px;
+        border: 2px solid #ff9900;
+    }
+
+    .indexed_container {
+        padding: 12px 6px;
+        border-radius: 9px;
+        overflow: hidden;
+    }
+
+    .outer_pading{
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .indexed_container_padding {
+        overflow-x: scroll;
+        display: flex;
+    
+    }
+
+    .indexed_container_padding::-webkit-scrollbar {
+        height: 3px;
+    }
+
+    .indexed_container_padding::-webkit-scrollbar-thumb {
+        border-radius: 2px;
+    }
+
+    .indexed_wallpaper_land {
+        margin: 0px 6px;
+    }
+
+    .indexed_wallpaper_img {
+        border-radius: 15px;
+        height: 120px;
+    }
+
+
+    .indexed_i {
+        height: 20px;
+        width: 20px;
+        border: 2px solid #ff9900;
+        margin: 10px 5px;
+        font-size: 11px;
+        padding: 3px;
+        padding-left: 5px;
+
+    }
+
+    .indexed_image img{
+        border-radius: 15px;
+        height: 120px;
+    }
+
+}

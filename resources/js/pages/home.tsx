@@ -7,6 +7,9 @@ import Header from '@/components/includes/Header';
 import WallpaperCard from '@/components/common/WallpaperCard';
 import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
 import Footer from '@/components/includes/Footer';
+import { usePaginatedList } from '@/hooks/use-paginated-list';
+import { useState } from 'react';
+import { useFullScreen } from '@/hooks/useFullScreen';
 
 export default function Welcome({
     canRegister = true,
@@ -15,8 +18,15 @@ export default function Welcome({
 }) {
     const { auth } = usePage<SharedData>().props as any;
     const { wallpapers } = usePage().props as any;
+    const initialWallpapers =
+        wallpapers ?? ({ data: [], next_page_url: null } as any);
+    const { items, isLoading, hasMore, loadMore } = usePaginatedList({
+        initialData: initialWallpapers,
+    });
+    const {toggleFullScreen} = useFullScreen();
 
-    // const LoadMoreWallpapers
+    const [CanplayBannerVideo, SetCanplayBannerVideo] = useState(false);
+
 
     return (
         <>
@@ -65,7 +75,7 @@ export default function Welcome({
              </div> */}
 
             <Header />
-            <div className="banner">
+            <div className="banner" id='banner'>
                 <div id="autoplay_div" className="zindexup">
                     <div className="play_button">
                         <i className="fa-solid fa-play"></i>
@@ -93,6 +103,7 @@ export default function Welcome({
                     className="background-clip"
                     id="myVideo"
                     poster="https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg"
+                    onCanPlayThrough={()=>{SetCanplayBannerVideo(true)}}
                 >
                     <source
                         src="storage/live_wallpaper/spaceship_720.mp4"
@@ -100,26 +111,35 @@ export default function Welcome({
                         id="bannersrc"
                     />
                 </video>
+
+                {!CanplayBannerVideo && (
                 <div className="loader-container" id="loader_banner">
                     <div className="loader"></div>
-                </div>
+                </div>)}
                 <div id="right">
                     <p>Next</p>
                 </div>
 
-                <div id="dis_fullscreen">
+                <div
+                    id="dis_fullscreen"
+                    onClick={() => toggleFullScreen('banner')}
+                >
                     <i className="fa-solid fa-expand banner_fullscreen"></i>
                 </div>
             </div>
 
             <section className="main">
                 <section className="wallpaper-container">
-                    {wallpapers.data.map((item: any) => (
+                    {items.map((item: any) => (
                         <WallpaperCard key={item.id} item={item} />
                     ))}
                 </section>
             </section>
-            <LoadMoreWallpapersButton />
+            <LoadMoreWallpapersButton
+                onClick={loadMore}
+                loading={isLoading}
+                hasMore={hasMore}
+            />
             <Footer />
         </>
     );

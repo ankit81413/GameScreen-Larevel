@@ -1,13 +1,13 @@
-import React from 'react';
 
 export default function WallpaperCard(props: any) {
-    console.log(props);
+    // console.log(props);
+    const island= props.item.orientation == "land"
     
     return (
         <>
-            <div className="wallpaper landscape">
+            <div className={`wallpaper ${island ? "landscape" : "portrait"}`}>
                 <div className="image">
-                    <a target="_blank" href={`image.html?value=${props.item.code}`}>
+                    <a target="_blank" href={`/view/${props.item.code}`}>
                         <img
                             src={`${props.item.thumbnail}`}
                             alt="wallpaper"

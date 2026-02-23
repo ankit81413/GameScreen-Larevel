@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\ViewPageController;
 
 // Route::get('/', function () {
 //     return Inertia::render('home', [
@@ -14,6 +15,8 @@ use App\Http\Controllers\ImportController;
 
 
 Route::get('/', [HomeController::class,'index'])->name('home');
+Route::get('/wallpapers', [HomeController::class, 'Loadmore'])->name('wallpapers.paginate');
+Route::get('/view/{id}',[ViewPageController::class,'view'])->name('viewWallpaper');
 
 // Route::get('/import-wallpapers', [ImportController::class, 'import']);
 // Route::get('/viewall', [ImportController::class, 'view']);

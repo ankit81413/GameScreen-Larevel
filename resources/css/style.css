@@ -161,6 +161,27 @@ header {
   color: #000000;
 }
 
+.LoginButton i{
+  display:inline-block;
+  transition:transform .3s;
+}
+
+.LoginButton:hover i{
+  animation:flipStatic 1s ease-in-out infinite;
+}
+
+@keyframes flipStatic{
+
+  /* start static */
+  0% { transform: rotateY(0); }
+  1% { transform: rotateY(180deg); }   /* flip right */
+  50% { transform: rotateY(180deg); }   /* hold (pause) */
+  51% { transform: rotateY(0deg); }  /* hold */
+
+  99% { transform: rotateY(0deg); }   /* flip right */
+  100% { transform: rotateY(0); }      /* back to normal */
+}
+
 .SignupButton {
   font-weight: 400;
   font-size: 15px;
@@ -643,6 +664,10 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+#autoplay_div h3{
+  color: black;
 }
 
 .banner h3 {

@@ -1,0 +1,173 @@
+  .alert_background {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    background-color: rgba(70, 70, 70, 0.712);
+    width: 100vw;
+    height: 0vh;
+    z-index: 9;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 1s;
+    
+  }
+
+  .alert_background_active {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    background-color: rgba(70, 70, 70, 0.712);
+    width: 100vw;
+    height: 100vh;
+    z-index: 9;
+    overflow: hidden;
+    display: block;
+    opacity: 1;
+    transition: opacity 1s;
+  }
+
+  .alertbox {
+    background-color: white;
+    position: fixed;
+    top: -100px;
+    width: 100%;
+    left: 0px;
+    transition: .5s;
+    z-index: 10;
+  }
+
+  .alertbox_active {
+    background-color: white;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    transition: 0.5s;
+    z-index: 10;
+  }
+
+  .alert {
+    display: flex;
+    padding: 10px;
+  }
+
+
+  .alert_heading {
+    font-size: 18px;
+    padding-bottom: 5px;
+  }
+
+  .alert_text {
+    margin-left: 8px;
+    width: calc(100% - 70px);
+
+  }
+
+
+  .alert_para {
+    font-size: 14px;
+  }
+
+  .symbol_container i {
+    font-size: 15px;
+    color: rgb(255, 255, 255);
+  }
+
+  .symbol_container {
+    background-color: blue;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    box-sizing: border-box;
+    height: 27px;
+    width: 27px;
+    margin: 3px;
+  }
+
+  .close{
+    color: black;
+    font-size: 20px;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    margin: 10px;
+    margin-right: 20px;
+    padding: 10px;
+  }
+
+  .progress_bar {
+    height: 3px;
+    background-color: white;
+  }
+
+  .progress {
+    height: 100%;
+    background-color: blue;
+    width: 0%;
+    transition: width 0s linear;
+  }
+
+  .progress_active {
+    height: 100%;
+    background-color: blue;
+    width: 100%;
+    transition: width 5s linear;
+  }
+  
+  
+  
+  /* Style for the blue dot */
+.blue-dot {
+  width: 10px;
+  height: 10px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  animation: bubble 1s ease-out;
+  /* Bubble animation */
+}
+
+
+
+.add-dot-button{
+  position: relative;
+  overflow: hidden;
+}
+
+
+
+
+
+
+@keyframes bubble {
+  0% {
+    transform: scale(0);
+  }
+
+  5% {
+    transform: scale(1.2);
+    /* Increase in size */
+  }
+
+  100% {
+    transform: scale(10);
+    /* Back to original size */
+    opacity: 0;
+    /* Disappear */
+  }
+}
+
+
+
+
+  @media screen and (min-width: 700px) {
+    .alert {
+      margin-left: 100px;
+    }
+
+    .alert_text {
+      margin-left: 8px;
+      width: calc(100% - 160px);
+    }
+
+  }

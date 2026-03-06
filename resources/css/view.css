@@ -447,20 +447,10 @@ display: none;
 
 
 
-/* <div id="video_quality">
-    <ul id="video_quality_list">
-      <li>sbhj</li>
-      <li>sbhj</li>
-      <li>sbhj</li>
-    </ul>
-    <button onclick="cancel_video_quality">Cancel</button>
-  </div> */
-
-
   #video_quality_backdrop {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.35);
+    background-color: rgba(0, 0, 0, 0.548);
     z-index: 6;
   }
 
@@ -481,6 +471,8 @@ display: none;
   #video_quality h2{
     font-size: 20px;
     margin-bottom: 10px;
+    color: #313131;
+    font-weight: 600;
   }
   
   #video_quality_list {

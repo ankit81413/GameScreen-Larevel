@@ -24,8 +24,8 @@ export default function Login({
 }: Props) {
     return (
         <AuthLayout
-            title="Log in to your account"
-            description="Enter your email and password below to log in"
+            title="Welcome Back"
+            description="Sign in to continue to Game Screen"
         >
             <Head title="Log in" />
 
@@ -36,9 +36,11 @@ export default function Login({
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
+                        <div className="grid gap-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email" className="text-sm font-medium text-[#d1d5db]">
+                                    Email address
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -48,17 +50,24 @@ export default function Login({
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{padding:"10px"}}
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
+                                <div className="flex items-center" style={{display:"flex", justifyContent:"space-between"}}>
+                                    <Label
+                                        htmlFor="password"
+                                        className="text-sm font-medium text-[#d1d5db]"
+                                    >
+                                        Password
+                                    </Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm"
+                                            className="ml-auto text-sm text-[#f5c16f] decoration-[#f5c16f]/40 hover:text-[#ffb347]"
                                             tabIndex={5}
                                         >
                                             Forgot password?
@@ -73,6 +82,8 @@ export default function Login({
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{padding:"10px"}}
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -82,13 +93,20 @@ export default function Login({
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
+                                    className="border-white/30 data-[state=checked]:border-[#ff9900] data-[state=checked]:bg-[#ff9900] data-[state=checked]:text-black"
+                                    style={{marginRight:"10px"}}
                                 />
-                                <Label htmlFor="remember">Remember me</Label>
+                                <Label
+                                    htmlFor="remember"
+                                    className="text-sm text-[#b8bec9]"
+                                >
+                                    Remember me
+                                </Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-1 h-11 w-full rounded-lg bg-[#ff9900] font-semibold text-black transition-colors hover:bg-[#f4a825]"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -99,9 +117,13 @@ export default function Login({
                         </div>
 
                         {canRegister && (
-                            <div className="text-center text-sm text-muted-foreground">
+                            <div className="pt-1 text-center text-sm text-[#9ca3af]">
                                 Don't have an account?{' '}
-                                <TextLink href={register()} tabIndex={5}>
+                                <TextLink
+                                    href={register()}
+                                    tabIndex={5}
+                                    className="text-[#f5c16f] decoration-[#f5c16f]/40 hover:text-[#ffb347]"
+                                >
                                     Sign up
                                 </TextLink>
                             </div>
@@ -111,7 +133,7 @@ export default function Login({
             </Form>
 
             {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
+                <div className="mt-4 rounded-lg border border-[#ff9900]/30 bg-[#2a1d08]/50 px-4 py-3 text-center text-sm font-medium text-[#ffd08b]">
                     {status}
                 </div>
             )}

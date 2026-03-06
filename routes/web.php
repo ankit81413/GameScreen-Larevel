@@ -23,6 +23,9 @@ Route::get('/banner-wallpapers', [BannerWallpaperController::class, 'index'])->n
 Route::get('/similar-wallpapers', [SimilarWallpaperController::class, 'index'])->name('similar.wallpapers');
 Route::get('/download/{code}', [DownloadController::class, 'download'])->name('download');
 Route::get('/view/{code}',[ViewPageController::class,'view'])->name('viewWallpaper');
+Route::get('/account', function () {
+    return Inertia::render('account');
+})->middleware(['auth'])->name('account');
 
 // Route::get('/import-wallpapers', [ImportController::class, 'import']);
 // Route::get('/viewall', [ImportController::class, 'view']);

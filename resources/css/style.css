@@ -6,6 +6,7 @@
 
 .loader-container {
   position: absolute;
+  inset: 0;
   background-color: #0000007e;
   display: flex;
   display: none;
@@ -500,7 +501,17 @@ footer {
   position: absolute;
   right: 5px;
   z-index: 3;
+  top: 0;
   /* background-color: red; */
+}
+
+.wallpaper-play-button {
+  cursor: pointer;
+}
+
+.wallpaper-card-loader {
+  display: flex;
+  z-index: 4;
 }
 
 .portrait .image img {
@@ -976,6 +987,16 @@ input:checked+.slider:before {
     font-size: 11px;
     padding: 5px;
     padding-left: 7px;
+  }
+
+  .wallpaper-play-button i {
+    height: 34px;
+    width: 34px;
+    border: 2px solid #ff9900;
+    margin: 8px;
+    font-size: 16px;
+    padding: 5px;
+    padding-left: 8px;
   }
 
 

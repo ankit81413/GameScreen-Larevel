@@ -12,6 +12,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useFullScreen } from '@/hooks/useFullScreen';
 
 const BANNER_AUTOPLAY_STORAGE_KEY = 'bannerAutoplayEnabled';
+const DEFAULT_BANNER_VIDEO_URL = 'storage/live_wallpaper/spaceship_720.mp4';
+const DEFAULT_BANNER_POSTER_URL = 'storage/live_wallpaper/spaceShip_thumb.jpeg';
+const LIVE_WALLPAPER_CODES = [
+    '0028',
+    '0029',
+    '0030',
+    '0031',
+    '0032',
+    '0033',
+    '0034',
+    '0035',
+    '0036',
+    '0037',
+    '0038',
+];
 
 export default function Welcome({
     canRegister = true,
@@ -25,9 +40,11 @@ export default function Welcome({
     const { items, isLoading, hasMore, loadMore } = usePaginatedList({
         initialData: initialWallpapers,
     });
-    const {toggleFullScreen} = useFullScreen();
+    const { toggleFullScreen } = useFullScreen();
 
+    const [bannerWallpapers, setBannerWallpapers] = useState<any[]>([]);
     const [CanplayBannerVideo, SetCanplayBannerVideo] = useState(false);
+    const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
     const [bannerAutoplayEnabled, setBannerAutoplayEnabled] = useState(() => {
         if (typeof window === 'undefined') {
             return false;
@@ -37,8 +54,109 @@ export default function Welcome({
             window.localStorage.getItem(BANNER_AUTOPLAY_STORAGE_KEY) === 'true'
         );
     });
-    const bannerVideoReff = useRef<HTMLVideoElement | null >(null)
-    const play_buttonReff = useRef<HTMLDivElement | null>(null)
+    const bannerVideoReff = useRef<HTMLVideoElement | null>(null);
+    const play_buttonReff = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const fetchBannerWallpapers = async () => {
+            try {
+                const query = encodeURIComponent(LIVE_WALLPAPER_CODES.join(','));
+                const response = await fetch(
+                    `/banner-wallpapers?codes=${query}`,
+                    { signal: controller.signal },
+                );
+
+                if (!response.ok) {
+                    setBannerWallpapers([]);
+                    return;
+                }
+
+                const data = await response.json();
+                if (!Array.isArray(data)) {
+                    setBannerWallpapers([]);
+                    return;
+                }
+
+                setBannerWallpapers(data);
+            } catch (error: any) {
+                if (error?.name === 'AbortError') {
+                    return;
+                }
+
+                setBannerWallpapers([]);
+            }
+        };
+
+        fetchBannerWallpapers();
+
+        return () => controller.abort();
+    }, []);
+
+    const selectedBannerWallpaper =
+        bannerWallpapers[currentBannerIndex] ?? bannerWallpapers[0] ?? null;
+
+    const getBannerVideoUrl = (wallpaper: any) => {
+        const links = Array.isArray(wallpaper?.links) ? wallpaper.links : [];
+        const parsedLinks = links
+            .map((link: any) => ({
+                ...link,
+                qualityValue: Number.parseInt(String(link?.quality ?? ''), 10),
+            }))
+            .filter((link: any) => !Number.isNaN(link.qualityValue));
+
+        if (!parsedLinks.length) {
+            return '';
+        }
+
+        const exact720 = parsedLinks.find((link: any) => link.qualityValue === 720);
+        const higherThan720 = parsedLinks
+            .filter((link: any) => link.qualityValue > 720)
+            .sort((a: any, b: any) => a.qualityValue - b.qualityValue)[0];
+        const fallback = parsedLinks.sort(
+            (a: any, b: any) => b.qualityValue - a.qualityValue,
+        )[0];
+
+        return (exact720 ?? higherThan720 ?? fallback)?.url ?? '';
+    };
+
+    const selectedBannerVideoUrl =
+        getBannerVideoUrl(selectedBannerWallpaper) || DEFAULT_BANNER_VIDEO_URL;
+    const selectedBannerPoster =
+        selectedBannerWallpaper?.thumbnail ?? DEFAULT_BANNER_POSTER_URL;
+    const selectedBannerHref = selectedBannerWallpaper
+        ? `/view/${selectedBannerWallpaper.code}`
+        : '#';
+
+    useEffect(() => {
+        if (!bannerWallpapers.length) {
+            setCurrentBannerIndex(0);
+            return;
+        }
+
+        if (currentBannerIndex >= bannerWallpapers.length) {
+            setCurrentBannerIndex(0);
+        }
+    }, [bannerWallpapers, currentBannerIndex]);
+
+    useEffect(() => {
+        SetCanplayBannerVideo(false);
+        if (!selectedBannerVideoUrl) {
+            SetCanplayBannerVideo(true);
+        }
+
+        const playButton = play_buttonReff.current;
+        if (!playButton) {
+            return;
+        }
+
+        const playText = playButton.querySelector('h3');
+        const playIcon = playButton.querySelector('i');
+
+        if (playText) playText.innerText = 'Play';
+        playIcon?.classList.add('fa-play');
+        playIcon?.classList.remove('fa-pause');
+    }, [currentBannerIndex, selectedBannerVideoUrl]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -75,47 +193,61 @@ export default function Welcome({
         syncBannerPlayback();
     }, [CanplayBannerVideo, bannerAutoplayEnabled]);
 
-    const play_pause_bannerVideo = ()=>{
-        console.log("hi");
-        
+    const play_pause_bannerVideo = () => {
         const video = bannerVideoReff.current;
 
-        if(!video){
-            return
+        if (!video) {
+            return;
         }
-        
 
-        if(video.paused){
+        if (video.paused) {
             video.play();
             checkPlayText();
-        }else{
-            video.pause()
+        } else {
+            video.pause();
             checkPlayText();
         }
-    }
+    };
 
-    const checkPlayText = ()=>{
-        
+    const checkPlayText = () => {
         const play_button = play_buttonReff.current;
         const video = bannerVideoReff.current;
 
-        if(!video || !play_button){
-            return
-        }
-        
-        let play_text : HTMLElement | null = play_button.querySelector("h3")
-        let play_icon : HTMLElement | null = play_button.querySelector("i")
-        if(!video.paused){
-            if(play_text) play_text.innerText = "Pause"
-            play_icon?.classList.add("fa-pause")
-            play_icon?.classList.remove("fa-play")
-        }else{
-            if(play_text) play_text.innerText = "Play"
-            play_icon?.classList.add("fa-play")
-            play_icon?.classList.remove("fa-pause")
+        if (!video || !play_button) {
+            return;
         }
 
-    }
+        const play_text: HTMLElement | null = play_button.querySelector('h3');
+        const play_icon: HTMLElement | null = play_button.querySelector('i');
+        if (!video.paused) {
+            if (play_text) play_text.innerText = 'Pause';
+            play_icon?.classList.add('fa-pause');
+            play_icon?.classList.remove('fa-play');
+        } else {
+            if (play_text) play_text.innerText = 'Play';
+            play_icon?.classList.add('fa-play');
+            play_icon?.classList.remove('fa-pause');
+        }
+    };
+
+    const goToNextBanner = () => {
+        if (bannerWallpapers.length <= 1) {
+            return;
+        }
+        setCurrentBannerIndex(
+            (current) => (current + 1) % bannerWallpapers.length,
+        );
+    };
+
+    const goToPreviousBanner = () => {
+        if (bannerWallpapers.length <= 1) {
+            return;
+        }
+        setCurrentBannerIndex(
+            (current) =>
+                (current - 1 + bannerWallpapers.length) % bannerWallpapers.length,
+        );
+    };
 
     const toggleBannerAutoplay = () => {
         setBannerAutoplayEnabled((currentValue) => !currentValue);
@@ -169,9 +301,14 @@ export default function Welcome({
              </div> */}
 
             <Header />
-            <div className="banner" id='banner'>
+            <div className="banner" id="banner">
                 <div id="autoplay_div" className="zindexup">
-                    <div className="play_button" onClick={play_pause_bannerVideo} style={{cursor : "pointer"}} ref={play_buttonReff}>
+                    <div
+                        className="play_button"
+                        onClick={play_pause_bannerVideo}
+                        style={{ cursor: 'pointer' }}
+                        ref={play_buttonReff}
+                    >
                         <i className="fa-solid fa-play"></i>
                         <h3>Play</h3>
                     </div>
@@ -189,34 +326,36 @@ export default function Welcome({
                     </div>
                 </div>
 
-                <a href="" id="board_a"></a>
+                <a href={selectedBannerHref} id="board_a"></a>
 
-                <div id="left" className="zindexup">
+                <div id="left" className="zindexup" onClick={goToPreviousBanner}>
                     <p>Prev</p>
                 </div>
 
                 <video
+                    key={selectedBannerWallpaper?.id ?? 'empty-banner'}
                     loop
                     muted
                     autoPlay={bannerAutoplayEnabled}
                     className="background-clip"
                     id="myVideo"
-                    poster="storage/live_wallpaper/spaceShip_thumb.jpeg"
-                    onCanPlayThrough={()=>{SetCanplayBannerVideo(true)}}
+                    poster={selectedBannerPoster}
+                    src={selectedBannerVideoUrl}
+                    onLoadStart={() => {
+                        SetCanplayBannerVideo(false);
+                    }}
+                    onCanPlay={() => {
+                        SetCanplayBannerVideo(true);
+                    }}
                     ref={bannerVideoReff}
-                >
-                    <source
-                        src="storage/live_wallpaper/spaceship_720.mp4"
-                        type="video/mp4"
-                        id="bannersrc"
-                    />
-                </video>
+                />
 
                 {!CanplayBannerVideo && (
-                <div className="loader-container" id="loader_banner">
-                    <div className="loader"></div>
-                </div>)}
-                <div id="right">
+                    <div className="loader-container" id="loader_banner">
+                        <div className="loader"></div>
+                    </div>
+                )}
+                <div id="right" className="zindexup" onClick={goToNextBanner}>
                     <p>Next</p>
                 </div>
 

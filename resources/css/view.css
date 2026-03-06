@@ -423,7 +423,7 @@ display: none;
 }
 
 
-#dis_fullscreen {
+#setting #dis_fullscreen {
   position: absolute;
   right: 10px;
   bottom: 5px;
@@ -439,7 +439,7 @@ display: none;
 
 }
 
-#dis_fullscreen i {
+#setting #dis_fullscreen i {
   font-size: 16px;
 
 

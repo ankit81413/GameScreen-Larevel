@@ -326,7 +326,7 @@ export default function Welcome({
                     </div>
                 </div>
 
-                <a href={selectedBannerHref} id="board_a"></a>
+                <Link href={selectedBannerHref} id="board_a"></Link>
 
                 <div id="left" className="zindexup" onClick={goToPreviousBanner}>
                     <p>Prev</p>

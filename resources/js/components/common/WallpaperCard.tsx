@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from '@inertiajs/react';
+import { viewWallpaper } from '@/routes';
 
 const PLAY_EVENT_NAME = 'wallpaper-card-play';
 
@@ -109,7 +111,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
     return (
         <div className={`wallpaper ${isLandscape ? 'landscape' : 'portrait'}`}>
             <div className="image">
-                <a target="_blank" href={`/view/${item.code}`}>
+                <Link href={viewWallpaper(item.code)}>
                     {!shouldLoadVideo && (
                         <img
                             src={`${item.thumbnail}`}
@@ -157,7 +159,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
                             }}
                         />
                     )}
-                </a>
+                </Link>
 
                 {isLoadingVideo && (
                     <div

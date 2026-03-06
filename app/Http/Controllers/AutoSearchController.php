@@ -46,8 +46,8 @@ class AutoSearchController extends Controller
                     WHEN EXISTS (
                         SELECT 1
                         FROM tags
-                        INNER JOIN tag_wallpaper ON tag_wallpaper.tag_id = tags.id
-                        WHERE tag_wallpaper.wallpaper_id = wallpapers.id
+                        INNER JOIN wallpaper_tag ON wallpaper_tag.tag_id = tags.id
+                        WHERE wallpaper_tag.wallpaper_id = wallpapers.id
                           AND LOWER(tags.name) LIKE ?
                     ) THEN 3
                     ELSE 4

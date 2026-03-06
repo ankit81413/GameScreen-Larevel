@@ -1,4 +1,6 @@
-import React from 'react'
+import React from 'react';
+import { Link } from '@inertiajs/react';
+import { home } from '@/routes';
 
 export default function Footer() {
   return (
@@ -13,10 +15,10 @@ export default function Footer() {
       <div className="footer-section">
         <h3 className="center">Explore</h3>
         <ul className="footer-links">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="latest.html">latest</a></li>
-          <li><a href="About Us.html">About Us</a></li>
-          <li><a href="Contact Us.html">Contact</a></li>
+          <li><Link href={home()}>Home</Link></li>
+          <li><Link href={home({ query: { filter: 'latest' } })}>latest</Link></li>
+          <li><Link href={home({ query: { section: 'about' } })}>About Us</Link></li>
+          <li><Link href={home({ query: { section: 'contact' } })}>Contact</Link></li>
         </ul>
       </div>
       <div className="footer-section">
@@ -37,5 +39,5 @@ export default function Footer() {
     </div>
   </div>
     </>
-  )
+  );
 }

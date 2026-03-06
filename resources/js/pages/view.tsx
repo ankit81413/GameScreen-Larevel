@@ -7,7 +7,7 @@ import Footer from '@/components/includes/Footer';
 import '../../css/view.css';
 import ViewWallpaperDisplay from '@/components/pages/view/View_wallpaper_display';
 import View_tag from '@/components/pages/view/View_Tag';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import WallpaperCard from '@/components/common/WallpaperCard';
 import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
@@ -19,6 +19,7 @@ export default function Welcome({
 }) {
     const { auth } = usePage<SharedData>().props as any;
     const { wallpaper } = usePage().props as any;
+    const [isDownloadBoxOpen, setIsDownloadBoxOpen] = useState(false);
     const {
         items: similarWallpapers,
         isLoading: isSimilarWallpapersLoading,
@@ -30,22 +31,55 @@ export default function Welcome({
             next_page_url: '/similar-wallpapers?page=1',
         },
     });
+    const normalizeQuality = (quality: unknown) => {
+        const raw = String(quality ?? '').trim().toLowerCase();
+        const compact = raw.replace(/\s+/g, '');
+
+        if (compact === '2k') return { value: 1440, label: '2k' };
+        if (compact === '4k') return { value: 2160, label: '4k' };
+        if (compact === '8k') return { value: 4320, label: '8k' };
+
+        const pMatch = compact.match(/^(\d+)p$/);
+        if (pMatch) {
+            const pValue = Number.parseInt(pMatch[1], 10);
+            return Number.isNaN(pValue)
+                ? { value: NaN, label: '' }
+                : { value: pValue, label: `${pValue}p` };
+        }
+
+        const numberMatch = compact.match(/^(\d+)$/);
+        if (numberMatch) {
+            const num = Number.parseInt(numberMatch[1], 10);
+            return Number.isNaN(num)
+                ? { value: NaN, label: '' }
+                : { value: num, label: `${num}p` };
+        }
+
+        return { value: NaN, label: '' };
+    };
+
     const downloadLinks = (Array.isArray(wallpaper?.links) ? wallpaper.links : [])
         .map((link: any) => {
-            const qualityText = String(link?.quality ?? '');
-            const qualityValue = Number.parseInt(qualityText, 10);
-            const qualityLabel = qualityText.endsWith('p')
-                ? qualityText
-                : `${qualityValue}p`;
+            const normalized = normalizeQuality(link?.quality);
 
             return {
                 ...link,
-                qualityValue,
-                qualityLabel,
+                qualityValue: normalized.value,
+                qualityLabel: normalized.label,
             };
         })
         .filter((link: any) => !Number.isNaN(link.qualityValue) && !!link.url)
         .sort((a: any, b: any) => b.qualityValue - a.qualityValue);
+    const toDownloadQualityQuery = (qualityValue: number) => {
+        if (qualityValue === 4320) return '8k';
+        if (qualityValue === 2160) return '4k';
+        if (qualityValue === 1440) return '2k';
+        return `${qualityValue}p`;
+    };
+    const getDownloadPageUrl = (qualityValue: number) =>
+        `/download/${wallpaper.code}?quality=${encodeURIComponent(
+            toDownloadQualityQuery(qualityValue),
+        )}`;
 
     useEffect(() => {
         if (!similarWallpapers.length && hasMoreSimilarWallpapers) {
@@ -119,7 +153,10 @@ export default function Welcome({
                                 <i className="fa-solid fa-bookmark"></i>
                             </div>
                             <div className="download">
-                                <i className="fa-regular fa-circle-down"></i>
+                                <i
+                                    className="fa-regular fa-circle-down"
+                                    onClick={() => setIsDownloadBoxOpen(true)}
+                                ></i>
                             </div>
                         </div>
                     </div>
@@ -147,19 +184,43 @@ export default function Welcome({
                         </div>
                     </div>
                 </div>
-                <div id="right">
+                <div
+                    id="right"
+                    style={isDownloadBoxOpen ? { display: 'block' } : undefined}
+                    onClick={(event) => {
+                        if (event.target === event.currentTarget) {
+                            setIsDownloadBoxOpen(false);
+                        }
+                    }}
+                >
                     <div id="download_box">
                         <h1>
                             <i className="fa-regular fa-circle-down"></i>Download
                         </h1>
                         <ul id="download_option_list">
-                            {downloadLinks.map((link: any) => (
-                                <li className="download_option" key={link.url}>
-                                    <a href={link.url} target="_blank">
-                                        {link.qualityLabel}
-                                    </a>
+                            {downloadLinks.length ? (
+                                downloadLinks.map((link: any) => (
+                                    <li
+                                        className="download_option"
+                                        key={link.url}
+                                    >
+                                        <Link
+                                            href={getDownloadPageUrl(
+                                                link.qualityValue,
+                                            )}
+                                            onClick={() =>
+                                                setIsDownloadBoxOpen(false)
+                                            }
+                                        >
+                                            {link.qualityLabel}
+                                        </Link>
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="download_option">
+                                    <span>No download links available</span>
                                 </li>
-                            ))}
+                            )}
                         </ul>
                     </div>
                 </div>

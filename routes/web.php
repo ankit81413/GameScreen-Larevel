@@ -8,6 +8,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\BannerWallpaperController;
 use App\Http\Controllers\SimilarWallpaperController;
 use App\Http\Controllers\ViewPageController;
+use App\Http\Controllers\DownloadController;
 
 // Route::get('/', function () {
 //     return Inertia::render('home', [
@@ -20,6 +21,7 @@ Route::get('/', [HomeController::class,'index'])->name('home');
 Route::get('/wallpapers', [HomeController::class, 'Loadmore'])->name('wallpapers.paginate');
 Route::get('/banner-wallpapers', [BannerWallpaperController::class, 'index'])->name('banner.wallpapers');
 Route::get('/similar-wallpapers', [SimilarWallpaperController::class, 'index'])->name('similar.wallpapers');
+Route::get('/download/{code}', [DownloadController::class, 'download'])->name('download');
 Route::get('/view/{code}',[ViewPageController::class,'view'])->name('viewWallpaper');
 
 // Route::get('/import-wallpapers', [ImportController::class, 'import']);

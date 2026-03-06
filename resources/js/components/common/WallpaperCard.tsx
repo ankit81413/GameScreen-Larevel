@@ -1,6 +1,6 @@
 
 export default function WallpaperCard(props: any) {
-    // console.log(props);
+    console.log(props);
     const island= props.item.orientation == "land"
     
     return (

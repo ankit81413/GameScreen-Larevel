@@ -8,8 +8,10 @@ import WallpaperCard from '@/components/common/WallpaperCard';
 import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
 import Footer from '@/components/includes/Footer';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
-import { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFullScreen } from '@/hooks/useFullScreen';
+
+const BANNER_AUTOPLAY_STORAGE_KEY = 'bannerAutoplayEnabled';
 
 export default function Welcome({
     canRegister = true,
@@ -26,6 +28,98 @@ export default function Welcome({
     const {toggleFullScreen} = useFullScreen();
 
     const [CanplayBannerVideo, SetCanplayBannerVideo] = useState(false);
+    const [bannerAutoplayEnabled, setBannerAutoplayEnabled] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        return (
+            window.localStorage.getItem(BANNER_AUTOPLAY_STORAGE_KEY) === 'true'
+        );
+    });
+    const bannerVideoReff = useRef<HTMLVideoElement | null >(null)
+    const play_buttonReff = useRef<HTMLDivElement | null>(null)
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        window.localStorage.setItem(
+            BANNER_AUTOPLAY_STORAGE_KEY,
+            bannerAutoplayEnabled ? 'true' : 'false',
+        );
+    }, [bannerAutoplayEnabled]);
+
+    useEffect(() => {
+        const video = bannerVideoReff.current;
+
+        if (!video || !CanplayBannerVideo) {
+            return;
+        }
+
+        const syncBannerPlayback = async () => {
+            if (bannerAutoplayEnabled) {
+                try {
+                    await video.play();
+                } catch (error) {
+                    video.pause();
+                }
+            } else {
+                video.pause();
+            }
+
+            checkPlayText();
+        };
+
+        syncBannerPlayback();
+    }, [CanplayBannerVideo, bannerAutoplayEnabled]);
+
+    const play_pause_bannerVideo = ()=>{
+        console.log("hi");
+        
+        const video = bannerVideoReff.current;
+
+        if(!video){
+            return
+        }
+        
+
+        if(video.paused){
+            video.play();
+            checkPlayText();
+        }else{
+            video.pause()
+            checkPlayText();
+        }
+    }
+
+    const checkPlayText = ()=>{
+        
+        const play_button = play_buttonReff.current;
+        const video = bannerVideoReff.current;
+
+        if(!video || !play_button){
+            return
+        }
+        
+        let play_text : HTMLElement | null = play_button.querySelector("h3")
+        let play_icon : HTMLElement | null = play_button.querySelector("i")
+        if(!video.paused){
+            if(play_text) play_text.innerText = "Pause"
+            play_icon?.classList.add("fa-pause")
+            play_icon?.classList.remove("fa-play")
+        }else{
+            if(play_text) play_text.innerText = "Play"
+            play_icon?.classList.add("fa-play")
+            play_icon?.classList.remove("fa-pause")
+        }
+
+    }
+
+    const toggleBannerAutoplay = () => {
+        setBannerAutoplayEnabled((currentValue) => !currentValue);
+    };
 
 
     return (
@@ -77,14 +171,19 @@ export default function Welcome({
             <Header />
             <div className="banner" id='banner'>
                 <div id="autoplay_div" className="zindexup">
-                    <div className="play_button">
+                    <div className="play_button" onClick={play_pause_bannerVideo} style={{cursor : "pointer"}} ref={play_buttonReff}>
                         <i className="fa-solid fa-play"></i>
                         <h3>Play</h3>
                     </div>
                     <div className="autoplay_button">
                         <h3>Autoplay</h3>
                         <label className="switch">
-                            <input type="checkbox" id="autoplaySwitch" />
+                            <input
+                                type="checkbox"
+                                id="autoplaySwitch"
+                                checked={bannerAutoplayEnabled}
+                                onChange={toggleBannerAutoplay}
+                            />
                             <span className="slider"></span>
                         </label>
                     </div>
@@ -99,11 +198,12 @@ export default function Welcome({
                 <video
                     loop
                     muted
-                    autoPlay
+                    autoPlay={bannerAutoplayEnabled}
                     className="background-clip"
                     id="myVideo"
-                    poster="https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg"
+                    poster="storage/live_wallpaper/spaceShip_thumb.jpeg"
                     onCanPlayThrough={()=>{SetCanplayBannerVideo(true)}}
+                    ref={bannerVideoReff}
                 >
                     <source
                         src="storage/live_wallpaper/spaceship_720.mp4"

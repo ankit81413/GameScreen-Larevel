@@ -351,6 +351,7 @@ header {
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
+  width: unset;
 }
 
 /* Style when hovering over the left and right divs */

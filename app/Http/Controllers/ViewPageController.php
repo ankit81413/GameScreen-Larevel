@@ -20,7 +20,7 @@ class ViewPageController extends Controller
 
         return Inertia::render('view',[
             'canRegister'=>Features::enabled(Features::registration()),
-            'wallpapers' => $wallpaper,
+            'wallpaper' => $wallpaper,
               
         ]);
     }

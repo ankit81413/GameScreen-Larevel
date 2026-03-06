@@ -102,6 +102,8 @@ header {
   max-width: min(72vw, 760px);
   background-color: rgba(255, 255, 255, 0.84);
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .searchbox i {
@@ -170,6 +172,123 @@ header {
 .search_focus_backdrop.show {
   opacity: 1;
   pointer-events: auto;
+}
+
+.search_history_container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 0 0 16px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: 0;
+  overflow: hidden;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
+}
+
+.search_history_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px 8px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.search_history_list {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.search_history_list li button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #222;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search_history_list li button i {
+  color: #6b7280;
+}
+
+.search_history_list li button:hover {
+  background: #f4f4f4;
+}
+
+.search_result_list {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.search_result_list li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #1f2937;
+}
+
+.search_result_list li a:hover {
+  background: #f4f4f4;
+}
+
+.search_result_list .thumb {
+  width: 64px;
+  height: 42px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #d1d5db;
+  flex: 0 0 64px;
+}
+
+.search_result_list .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search_result_list .meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.search_result_list .title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search_result_list .sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.search_history_empty {
+  padding: 10px 14px 14px;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 .right_container {
@@ -1404,6 +1523,10 @@ input:checked+.slider:before {
   .searchbox.searchbox-focused {
     width: 100%;
     max-width: 100%;
+  }
+
+  .search_history_container {
+    max-height: 55vh;
   }
 
 

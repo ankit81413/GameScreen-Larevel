@@ -9,20 +9,19 @@ use App\Models\Wallpaper;
 
 class HomeController extends Controller
 {
-    public function index(){
-
-        $wallpapers = Wallpaper::with(['links','tags'])->paginate(10);
+    public function index()
+    {
+        $wallpapers = Wallpaper::with(['links', 'tags'])->paginate(10);
         $wallpapers->withPath(route('wallpapers.paginate'));
         
 
-        return Inertia::render('home',[
-            'canRegister'=>Features::enabled(Features::registration()),
+        return Inertia::render('home', [
+            'canRegister' => Features::enabled(Features::registration()),
             'wallpapers' => $wallpapers,
-              
         ]);
     }
 
-    public function Loadmore(Request $request)
+    public function Loadmore()
     {
         $wallpapers = Wallpaper::with(['links', 'tags'])->paginate(10);
         $wallpapers->withPath(route('wallpapers.paginate'));

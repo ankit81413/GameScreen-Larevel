@@ -18,7 +18,18 @@ export default function Download() {
     const [manualLinkVisible, setManualLinkVisible] = useState(false);
     const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const confettiAnimationFrameRef = useRef<number | null>(null);
-    const confettiStopTimeoutRef = useRef<number | null>(null);
+    const confettiResizeHandlerRef = useRef<(() => void) | null>(null);
+    const confettiParticlesRef = useRef<
+        Array<{
+            color: { front: string; back: string };
+            shape: 'rect' | 'diamond' | 'circle' | 'star' | 'heart' | 'kite';
+            dimensions: { x: number; y: number };
+            position: { x: number; y: number };
+            rotation: number;
+            scale: { x: number; y: number };
+            velocity: { x: number; y: number };
+        }>
+    >([]);
 
     const flipDonationCard = (action: 'donate' | 'back' | 'done') => {
         if (action === 'donate') {
@@ -69,53 +80,52 @@ export default function Download() {
         };
 
         resizeCanvas();
-        const colorPalette = ['#ff9900', '#ff4d00', '#ffd166', '#06d6a0', '#118ab2'];
-        const particles = Array.from({ length: 140 }).map(() => ({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height - canvas.height,
-            r: Math.random() * 5 + 2,
-            dx: Math.random() * 2 - 1,
-            dy: Math.random() * 2 + 2,
-            color: colorPalette[Math.floor(Math.random() * colorPalette.length)],
-        }));
+        const confettiCount = 300;
+        const colors = [
+            { front: 'red', back: 'darkred' },
+            { front: 'green', back: 'darkgreen' },
+            { front: 'blue', back: 'darkblue' },
+            { front: 'yellow', back: 'darkyellow' },
+            { front: 'orange', back: 'darkorange' },
+            { front: 'pink', back: 'darkpink' },
+            { front: 'purple', back: 'darkpurple' },
+            { front: 'turquoise', back: 'darkturquoise' },
+        ];
 
-        const draw = () => {
-            context.clearRect(0, 0, canvas.width, canvas.height);
+        const randomRange = (min: number, max: number) =>
+            Math.random() * (max - min) + min;
+        const shapes: Array<
+            'rect' | 'diamond' | 'circle' | 'star' | 'heart' | 'kite'
+        > = ['rect', 'diamond', 'circle', 'star', 'heart', 'kite'];
+        const confettiPieces = Array.from({ length: confettiCount }).map(() => {
+            const color = colors[Math.floor(randomRange(0, colors.length))];
+            return {
+                color,
+                shape: shapes[Math.floor(randomRange(0, shapes.length))],
+                dimensions: {
+                    x: randomRange(8, 25),
+                    y: randomRange(8, 25),
+                },
+                position: {
+                    x: randomRange(0, canvas.width),
+                    y: canvas.height - 1,
+                },
+                rotation: randomRange(0, 2 * Math.PI),
+                scale: {
+                    x: 1,
+                    y: 1,
+                },
+                velocity: {
+                    x: randomRange(-25, 25),
+                    y: randomRange(0, -50),
+                },
+            };
+        });
 
-            particles.forEach((particle) => {
-                particle.x += particle.dx;
-                particle.y += particle.dy;
-
-                if (particle.y > canvas.height + 10) {
-                    particle.y = -10;
-                    particle.x = Math.random() * canvas.width;
-                }
-
-                context.beginPath();
-                context.arc(particle.x, particle.y, particle.r, 0, Math.PI * 2);
-                context.fillStyle = particle.color;
-                context.fill();
-            });
-
-            confettiAnimationFrameRef.current = window.requestAnimationFrame(draw);
-        };
-
-        if (confettiAnimationFrameRef.current) {
-            window.cancelAnimationFrame(confettiAnimationFrameRef.current);
-        }
-        if (confettiStopTimeoutRef.current) {
-            window.clearTimeout(confettiStopTimeoutRef.current);
-        }
-
-        draw();
-
-        confettiStopTimeoutRef.current = window.setTimeout(() => {
-            if (confettiAnimationFrameRef.current) {
-                window.cancelAnimationFrame(confettiAnimationFrameRef.current);
-                confettiAnimationFrameRef.current = null;
-            }
-            context.clearRect(0, 0, canvas.width, canvas.height);
-        }, 3000);
+        confettiParticlesRef.current = [
+            ...confettiParticlesRef.current,
+            ...confettiPieces,
+        ];
     };
 
     useEffect(() => {
@@ -184,12 +194,149 @@ export default function Download() {
     }, [download?.url, wallpaper?.name]);
 
     useEffect(() => {
+        const canvas = confettiCanvasRef.current;
+        if (!canvas) {
+            return;
+        }
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+            return;
+        }
+
+        const gravity = 1;
+        const terminalVelocity = 6;
+        const drag = 0.075;
+
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+
+        resizeCanvas();
+        confettiResizeHandlerRef.current = resizeCanvas;
+        window.addEventListener('resize', confettiResizeHandlerRef.current);
+
+        const render = () => {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            confettiParticlesRef.current.forEach((confetto, index) => {
+                context.translate(confetto.position.x, confetto.position.y);
+                context.rotate(confetto.rotation);
+
+                confetto.velocity.x -= confetto.velocity.x * drag;
+                confetto.velocity.y = Math.min(
+                    confetto.velocity.y + gravity,
+                    terminalVelocity,
+                );
+                confetto.velocity.x +=
+                    Math.random() > 0.5 ? Math.random() : -Math.random();
+
+                confetto.position.x += confetto.velocity.x;
+                confetto.position.y += confetto.velocity.y;
+
+                if (confetto.position.y >= canvas.height) {
+                    confettiParticlesRef.current.splice(index, 1);
+                }
+
+                if (confetto.position.x > canvas.width) confetto.position.x = 0;
+                if (confetto.position.x < 0) confetto.position.x = canvas.width;
+
+                if (confetto.shape === 'heart') {
+                    // Keep heart shape static, no pulsing/beating animation.
+                    confetto.scale.y = 1;
+                    context.fillStyle = confetto.color.front;
+                } else {
+                    confetto.scale.y = Math.cos(confetto.position.y * 0.1);
+                    context.fillStyle =
+                        confetto.scale.y > 0
+                            ? confetto.color.front
+                            : confetto.color.back;
+                }
+
+                const width = confetto.dimensions.x * confetto.scale.x;
+                const height = confetto.dimensions.y * confetto.scale.y;
+
+                if (confetto.shape === 'rect') {
+                    context.fillRect(-width / 2, -height / 2, width, height);
+                } else if (confetto.shape === 'diamond') {
+                    context.beginPath();
+                    context.moveTo(0, -height / 2);
+                    context.lineTo(width / 2, 0);
+                    context.lineTo(0, height / 2);
+                    context.lineTo(-width / 2, 0);
+                    context.closePath();
+                    context.fill();
+                } else if (confetto.shape === 'circle') {
+                    context.beginPath();
+                    context.arc(0, 0, Math.max(width, height) / 3, 0, Math.PI * 2);
+                    context.fill();
+                } else if (confetto.shape === 'star') {
+                    const spikes = 5;
+                    const outerRadius = Math.max(width, height) / 2.2;
+                    const innerRadius = outerRadius / 2.2;
+                    let rot = -Math.PI / 2;
+                    context.beginPath();
+                    context.moveTo(0, -outerRadius);
+                    for (let i = 0; i < spikes; i += 1) {
+                        context.lineTo(
+                            Math.cos(rot) * outerRadius,
+                            Math.sin(rot) * outerRadius,
+                        );
+                        rot += Math.PI / spikes;
+                        context.lineTo(
+                            Math.cos(rot) * innerRadius,
+                            Math.sin(rot) * innerRadius,
+                        );
+                        rot += Math.PI / spikes;
+                    }
+                    context.closePath();
+                    context.fill();
+                } else if (confetto.shape === 'heart') {
+                    const heartSize = Math.max(width, height) / 3.2;
+                    context.beginPath();
+                    context.moveTo(0, heartSize);
+                    context.bezierCurveTo(
+                        heartSize * 2,
+                        -heartSize * 0.6,
+                        heartSize * 1.5,
+                        -heartSize * 2.2,
+                        0,
+                        -heartSize,
+                    );
+                    context.bezierCurveTo(
+                        -heartSize * 1.5,
+                        -heartSize * 2.2,
+                        -heartSize * 2,
+                        -heartSize * 0.6,
+                        0,
+                        heartSize,
+                    );
+                    context.closePath();
+                    context.fill();
+                } else {
+                    context.beginPath();
+                    context.moveTo(0, -height / 2);
+                    context.lineTo(width / 2, 0);
+                    context.lineTo(0, height / 2);
+                    context.lineTo(-width / 3, 0);
+                    context.closePath();
+                    context.fill();
+                }
+                context.setTransform(1, 0, 0, 1, 0, 0);
+            });
+
+            confettiAnimationFrameRef.current = window.requestAnimationFrame(render);
+        };
+
+        confettiAnimationFrameRef.current = window.requestAnimationFrame(render);
+
         return () => {
             if (confettiAnimationFrameRef.current) {
                 window.cancelAnimationFrame(confettiAnimationFrameRef.current);
             }
-            if (confettiStopTimeoutRef.current) {
-                window.clearTimeout(confettiStopTimeoutRef.current);
+            if (confettiResizeHandlerRef.current) {
+                window.removeEventListener('resize', confettiResizeHandlerRef.current);
             }
         };
     }, []);

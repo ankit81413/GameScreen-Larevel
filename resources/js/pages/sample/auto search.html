@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Results</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<style>
+  /* Reset some default styles */
+
+
+  html {
+    font-size: 0.1vw;
+  }
+
+
+
+
+  .results {
+    display: none;
+    /* Initially hide the results */
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin: 10px;
+    width: 95%;
+    z-index: 99;
+    margin: auto;
+  }
+
+  .result {
+    display: flex;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    margin: 20px;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+
+  .thumbnail {
+    padding-right: 10px;
+  }
+
+  .thumbnail img {
+    width: 230px;
+    /* Adjust the size as needed */
+    height: auto;
+  }
+
+  .details {
+    display: block;
+  }
+
+  .details h2 {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .details p {
+    color: green;
+    font-size: 20px;
+  }
+
+
+
+  /* <form class="searchform">
+    <input type="text" class="srcinp">
+    <button type="submit">search</button>
+  </form>
+  <!--<a href="auto search.html?value=palak">click</a>-->
+  <div class="results"></div>
+  <div id="wallpaper-container"></div> */
+
+  .searchform {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .srcinp {
+    background-color: rgb(255, 255, 255);
+    padding: 2px 10px;
+    border: 2px solid #f90;
+    border-radius: 15px 0px 0px 15px;
+    min-width: 70%;
+    font-size: 22px;
+
+  }
+
+
+  .srcbtn {
+    background-color: rgb(235, 235, 235);
+    padding: 2px 5px;
+    border: 2px solid #f90;
+    color: #f90;
+    border-radius: 0px 15px 15px 0px;
+    border-left: 0px;
+    font-size: 22px;
+    font-weight: normal;
+
+  }
+
+  #main_container {
+    width: calc(100% - 30px);
+    border: 3px solid #f90;
+    min-height: 80vh;
+    border-radius: 25px;
+    padding: 10px;
+    margin: 15px;
+    box-sizing: border-box;
+  }
+
+
+
+
+
+  /* 4444444444444444444444444444 */
+
+
+
+
+  /* Basic styles for the form */
+  .searchform {
+    display: flex;
+    margin: 0 auto;
+    background-color: black;
+    border: 0px solid #495057;
+    overflow: hidden;
+    border-bottom: 3px solid rgb(78, 78, 78);
+  }
+
+  /* Input styles */
+  .srcinp {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+    background-color: #000000;
+    color: #fff;
+    border: 2px solid rgb(109, 69, 10);
+  }
+
+  /* Button styles */
+  .srcbtn {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border: 2px solid #006bdd;
+    border-left: 0px;
+  }
+
+  .srcbtn:hover {
+    background-color: #0056b3;
+  }
+
+  /* Responsive styles for smaller screens */
+  @media screen and (max-width: 600px) {
+    .searchform {
+      padding: 9px;
+    }
+
+    .srcinp {
+      padding: 7px;
+      font-size: 16px;
+      border: 1px solid rgb(109, 69, 10);
+    }
+
+    .srcbtn {
+      padding: 7px 15px;
+      font-size: 16px;
+      border: 1px solid rgb(109, 69, 10);
+      border-left: 0px;
+    }
+  }
+
+
+
+
+
+  @media (max-width: 600px) {
+
+
+    html {
+      font-size: 0.16vw;
+    }
+
+    .center {
+      width: 500px;
+    }
+  }
+
+  a {
+    font-size: 20px;
+  }
+
+</style>
+
+<body>
+  <!-- <a href="auto search.html?tag=beast">beast</a><br>
+  <a href="auto search.html?tag=one">one</a> -->
+  <form class="searchform">
+    <input type="text" class="srcinp" placeholder="search">
+    <button type="submit" class="srcbtn">Search</button>
+  </form>
+  <!--<a href="auto search.html?value=palak">click</a>-->
+  <div class="results"></div>
+  <div id="main_container">
+    <div id="wallpaper-container"></div>
+    <section id="loadmore">
+      <button id="loadmore_button" onclick="loadmore()"><i class="fa-solid fa-rotate-right"></i>Load more</button>
+      <!-- <button id="loadmore_button" onclick="loadwallpapers()"><i class="fa-solid fa-rotate-right"></i>Load more</button> -->
+    </section>
+  </div>
+
+  <script>
+
+    const jsonUrl = 'wallpapers.json'; // Replace with your JSON source URL
+    let originaljson; // Replace with your JSON source URL
+    let jsonData = null;
+    // document.getElementById("loadmore").style.display = "none";
+
+    fetch(jsonUrl)
+      .then(response => response.json())
+      .then(data => {
+        jsonData = data;
+        originaljson = data;
+        urlsrc_function()
+      }).catch(error => {
+        console.error('Error fetching JSON data:', error);
+      });
+
+    const searchInput = document.querySelector('.srcinp');
+    const resultsDiv = document.querySelector('.results');
+
+    searchInput.addEventListener('input', function () {
+      const query = searchInput.value.toLowerCase().trim();
+      if (query === '') {
+        resultsDiv.style.display = 'none'; // Hide the results when input is empty
+      } else {
+        resultsDiv.style.display = 'block'; // Show the results when there's input
+        const searchResultsKeys = searchJSONData(query);
+        reset_wallpaper_data();
+        displayResults(searchResultsKeys);
+      }
+    });
+
+    document.querySelector('.searchform').addEventListener('submit', function (event) {
+      event.preventDefault(); // Prevent form submission
+      const query = searchInput.value.toLowerCase().trim();
+      if (query !== '') {
+        resultsDiv.style.display = 'none'; // Show the results on submission
+        const searchResultsKeys = searchJSONData(query);
+        document.getElementById("loadmore").style.display = "flex";
+
+        displayfinalResults(searchResultsKeys);
+      }
+    });
+
+
+
+
+
+
+    const currentURL = window.location.href;
+
+
+    const urlParams = new URLSearchParams(new URL(currentURL).search);
+
+    let tag = urlParams.get('tag');
+
+    function urlsrc_function() {
+
+
+
+
+      if (tag == '' || tag == null) {
+        console.log("nooooooooooooooo");
+      } else {
+
+        console.log("SRCCCCCCCCCCCCCCCCCCCCCCCC       " + tag);
+        resultsDiv.style.display = 'none'; // Show the results on submission
+        let urlsrcrslt = searchJSONData(tag);
+        console.log(urlsrcrslt);
+        displayfinalResults(urlsrcrslt);
+        document.querySelector(".srcinp").value = "tag: " + tag;
+
+      }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function searchJSONData(query) {
+      if (!jsonData || !query) {
+        return [];
+      }
+
+      const words = query.toLowerCase().split(' ').filter(Boolean);
+
+      const containsWordInName = (product) => {
+        return words.some(word => product.name.toLowerCase().includes(word));
+      };
+
+      const containsWordInTags = (product) => {
+        return product.tags && product.tags.some(tag => words.some(word => tag.toLowerCase().includes(word)));
+      };
+
+      const resultsWithWordInName = Object.entries(jsonData)
+        .filter(([key, product]) => containsWordInName(product))
+        .map(([key, product]) => ({ key, relevance: calculateRelevance(product.name, query) }));
+
+      const resultsWithWordInTags = Object.entries(jsonData)
+        .filter(([key, product]) => containsWordInTags(product))
+        .map(([key, product]) => ({ key, relevance: calculateRelevance(product.name, query) }));
+
+      const combinedResults = [
+        ...resultsWithWordInName,
+        ...resultsWithWordInTags.filter(result => !resultsWithWordInName.map(({ key }) => key).includes(result.key))
+      ];
+
+      const sortedResults = combinedResults.sort((a, b) => {
+        if (a.relevance === b.relevance) {
+          const indexA = words.findIndex(word => jsonData[a.key].name.toLowerCase().includes(word));
+          const indexB = words.findIndex(word => jsonData[b.key].name.toLowerCase().includes(word));
+
+          if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+          }
+        }
+        return a.relevance - b.relevance;
+      });
+
+      const uniqueKeys = Array.from(new Set(sortedResults.map(result => result.key)));
+
+      return uniqueKeys.slice(0, 10);
+    }
+
+
+
+
+    function calculateRelevance(name, query) {
+
+      let query2 = query;
+      query = " " + query2 + " ";
+      console.log("____" + query + "______");
+
+      if (!name || !query) {
+        return 0; // Handle undefined or empty strings
+      }
+
+      const lowerName = name.toLowerCase();
+      const lowerQuery = query.toLowerCase();
+      //   const queryWords = lowerQuery.split(' ').filter(Boolean);
+      const queryWords = lowerQuery;
+
+      let minIndex = Infinity;
+
+      for (const word of queryWords) {
+        const indexInName = lowerName.indexOf(word);
+        if (indexInName !== -1 && indexInName < minIndex) {
+          minIndex = indexInName;
+        }
+      }
+
+      return minIndex === Infinity ? 0 : minIndex + 1;
+    }
+
+
+
+
+
+
+
+
+
+
+    // Function to display search results
+    function displayResults(keys) {
+      resultsDiv.innerHTML = '';
+      const resultsData = keys.map(key => jsonData[key]); // Fetch product data using keys
+      console.log("keyss :" + keys);
+      let ij = -1;
+
+      if (resultsData.length === 0) {
+        alertNoResultsFound();
+      } else {
+        resultsData.forEach(product => {
+          const resultDiv = document.createElement('div');
+          resultDiv.classList.add('result');
+          ij++;
+          console.log(keys[ij]);
+
+          const thumbnailDiv = document.createElement('div');
+          thumbnailDiv.classList.add('thumbnail');
+          const image = document.createElement('img');
+          image.src = product.thumbnail;
+          thumbnailDiv.appendChild(image);
+
+          const detailsDiv = document.createElement('div');
+          detailsDiv.classList.add('details');
+          const name = document.createElement('h2');
+          name.classList.add('name');
+          name.textContent = product.name;
+          const dealPrice = document.createElement('p');
+          dealPrice.classList.add('dealprice');
+          let present_wallpaper_maxquality = give_max_least_quality(keys[ij], "max");
+
+          dealPrice.textContent = `Quality: ${present_wallpaper_maxquality}`;
+          detailsDiv.appendChild(name);
+          detailsDiv.appendChild(dealPrice);
+
+          resultDiv.appendChild(thumbnailDiv);
+          resultDiv.appendChild(detailsDiv);
+
+          resultDiv.addEventListener('click', () => {
+            const selectedProductKey = Object.keys(jsonData).find(key => jsonData[key] === product);
+            // Log the key of the selected product
+            console.log("Selected Product Key:", selectedProductKey);
+
+            // Redirect to the selected product page
+            window.location.href = `image.html?value=${selectedProductKey}`;
+
+            // You can perform other actions with the selected product data here
+            console.log("Selected Product Data:", product);
+          });
+
+          resultsDiv.appendChild(resultDiv);
+        });
+      }
+    }
+
+    // Function to alert "No results found"
+    function alertNoResultsFound() {
+      document.getElementById("wallpaper-container").style.display = "none";
+      resultsDiv.innerHTML = `<div style="display:flex;padding:20px;">
+        <div style="">
+            <i><svg style="font-size:100px; color:#646464;margin-right:20px" xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512"><path d="M448 96c0-35.3-28.7-64-64-64L64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-320zM256 160c0 17.7-14.3 32-32 32l-96 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l96 0c-17.7 0-32-14.3-32-32zm64 64c17.7 0 32 14.3 32 32s-14.3 32-32 32l-192 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l192 0zM192 352c0 17.7-14.3 32-32 32l-32 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l32 0c-17.7 0-32-14.3-32-32z" /></svg></i>
+        </div>
+        <div>
+            <h1 style="font-size:25px; margin:5px;">NO Result found</h1>
+            <h3 style="margin-left:5px;font-size:19px;">Try any other spelling for better results</h3>
+        </div>
+    </div>`;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    let total_wallpapers;
+    var wallpaper_count = -1;
+    // let next_showable_wallpapewr = wallpaper_count + wallpaper_load_count +1;
+    let next_showable_wallpapewr = 0;
+    let shuffledKeys;
+
+
+
+    function reset_wallpaper_data() {
+
+      wallpaper_count = -1;
+      next_showable_wallpapewr = 0;
+      document.getElementById("wallpaper-container").innerHTML = "";
+
+    }
+
+
+
+    let wallpaper_load_count;
+    let load_count_select = localStorage.getItem("load_count_select");
+
+
+
+
+    if (load_count_select == null || load_count_select == "") {
+      wallpaper_load_count = 10;
+    }else{
+      wallpaper_load_count = parseInt(load_count_select);
+    }
+
+
+
+    // -----------DEFAULT-------------
+    let thumb_quality_select = localStorage.getItem("thumb_quality_select");
+    console.log("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+    console.log(thumb_quality_select);
+
+
+    function give_max_least_quality(product_code, min_max) {
+
+      let download_options_raw = originaljson[product_code].link;
+
+
+
+      let keys = Object.keys(download_options_raw);
+      let order = ['4k', '2k', '1080', '720', '510', '480'];
+
+      let download_options = keys.sort((a, b) => {
+        let indexA = order.indexOf(a);
+        let indexB = order.indexOf(b);
+
+
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+
+        if (indexA !== -1) {
+          return -1;
+        }
+        if (indexB !== -1) {
+          return 1;
+        }
+
+        return 0;
+      });
+
+
+      let total_download_options = download_options.length;
+      let return_value;
+
+
+      if (min_max == "max") {
+
+        console.log("MMMMMMMax of " + product_code + " is " + download_options[0]);
+        return_value = download_options[0];
+
+      } else if (min_max == "min") {
+
+        console.log("MMMMMMMin of " + product_code + " is " + download_options[(total_download_options) - 1]);
+        return_value = download_options[(total_download_options) - 1];
+
+      } else {
+
+        if (download_options.includes(min_max)) {
+          return_value = min_max;
+        } else {
+          return_value = "false";
+        }
+
+
+
+      }
+
+
+      console.log("ulllllllllllllllllllllllllllllllll");
+      console.log(download_options);
+
+
+
+
+      return return_value;
+
+
+
+
+
+    }
+
+
+
+    let default_video_thumb_quality;
+
+
+    function get_quality(codee) {
+
+
+      let return_value = "1080";
+
+      switch (thumb_quality_select) {
+        case "Max_quality":
+          return_value = give_max_least_quality(codee, "max");
+          break;
+
+        case "1080":
+        return_value = give_max_least_quality(codee, "1080");
+
+          break;
+
+        case "480":
+        return_value = give_max_least_quality(codee, "480");
+
+          break;
+
+        case "lowest_quality":
+          return_value = give_max_least_quality(codee, "min");
+
+          break;
+
+        default:
+        return_value = give_max_least_quality(codee, "min");
+
+          break;
+
+
+      }
+
+
+
+      if (return_value == "false") {
+        return_value = give_max_least_quality(codee, "min");
+        console.log("false quality");
+      }
+
+      return return_value;
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+    let similar_products;
+
+    function displayfinalResults(params) {
+
+      similar_products = params;
+      show_similar_producta();
+
+    }
+
+
+    // function displayResults(similar_products) {
+    function show_similar_producta() {
+      console.log("loadingggggggggggggggggggggggggggggggggggggggggggg");
+      shuffledKeys = similar_products;
+      total_wallpapers = similar_products.length;
+      console.log("shufflrd keys \n\n\n" + shuffledKeys);
+      let wallpaper_container = document.getElementById("wallpaper-container");
+      wallpaper_container.style.display = "grid";
+
+      console.log("hi");
+
+      for (let i = next_showable_wallpapewr; i < Math.min(next_showable_wallpapewr + wallpaper_load_count, shuffledKeys.length); i++) {
+
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(i);
+        console.log(shuffledKeys);
+        let present_wallpaper_code = shuffledKeys[i];
+        console.log(present_wallpaper_code);
+        console.log("present_wallpaper_code");
+        let present_wallpaper_type_short = originaljson[present_wallpaper_code]["type"];
+        let present_wallpaper_orientation_short = originaljson[present_wallpaper_code]["orientation"];
+        let present_wallpaper_name = originaljson[present_wallpaper_code]["name"];
+        let present_wallpaper_thumbnaiL = originaljson[present_wallpaper_code]["thumbnail"];
+
+        let present_wallpaper_orientation;
+        let preciew_innerhtml = "";
+        // next_showable_wallpapewr++;
+
+        let thumb_quality = get_quality(present_wallpaper_code)
+        console.log("thumb_quality \n\n\n\n" + thumb_quality);
+
+        let video_thumbnail = originaljson[present_wallpaper_code]["link"][thumb_quality][1];
+
+
+
+        // next_showable_wallpapewr++;
+
+        wallpaper_count = wallpaper_count + 1;
+        console.log(wallpaper_count);
+
+
+
+        switch (present_wallpaper_type_short) {
+      case "1":
+        preciew_innerhtml = `<a target="_blank" href="image.html?value=` + present_wallpaper_code + `" ><img
+        src="` + present_wallpaper_thumbnaiL + `" alt="wallpaper" id="wallpaper` + wallpaper_count + `">`;
+
+        break;
+
+
+      case "2":
+        preciew_innerhtml = `<div class="i_container" onclick="playvideowallpaper(` + wallpaper_count + `,'`+ video_thumbnail +`')"><i class="fa-solid fa-play"></i></div><div class="loader-container" id="loader` + wallpaper_count + `"><div class="loader"></div></div>
+        <a target="_blank" href="image.html?value=` + present_wallpaper_code + `" ><video poster="` + present_wallpaper_thumbnaiL + `" loop muted src="" id="wallpaper` + wallpaper_count + `"></video>`;
+
+        break;
+
+
+      case "3":
+        preciew_innerhtml = `<div class="i_container" onclick="playvideowallpaper(` + wallpaper_count + `,'`+ video_thumbnail +`')"><i class="fa-solid fa-play"></i></div><div class="loader-container" id="loader` + wallpaper_count + `"><div class="loader"></div></div>
+        <a target="_blank" href="image.html?value=` + present_wallpaper_code + `" ><video poster="` + present_wallpaper_thumbnaiL + `" loop muted src="" id="wallpaper` + wallpaper_count + `"></video>`;
+
+        break;
+
+
+      case "P2":
+        preciew_innerhtml = `<div class="i_container" onclick="playvideowallpaper(` + wallpaper_count + `,'`+ video_thumbnail +`')"><i class="fa-solid fa-play"></i></div><div class="loader-container" id="loader` + wallpaper_count + `"><div class="loader"></div></div>
+        <a target="_blank" href="image.html?value=` + present_wallpaper_code + `" ><video poster="` + present_wallpaper_thumbnaiL + `" loop muted src="" id="wallpaper` + wallpaper_count + `"></video>`;
+
+        break;
+
+
+      case "P3":
+        preciew_innerhtml = `<div class="i_container" onclick="playvideowallpaper(` + wallpaper_count + `,'`+ video_thumbnail +`')"><i class="fa-solid fa-play"></i></div><div class="loader-container" id="loader` + wallpaper_count + `"><div class="loader"></div></div>
+        <a target="_blank" href="image.html?value=` + present_wallpaper_code + `" ><video poster="` + present_wallpaper_thumbnaiL + `" loop muted  id="wallpaper` + wallpaper_count + `"></video>`;
+
+        break;
+
+
+      default:
+        preciew_innerhtml = `<a target="_blank" href="image.html?value=` + present_wallpaper_code + `" ><img
+        src="` + present_wallpaper_thumbnaiL + `" alt="wallpaper">`;
+
+
+
+        break;
+    }
+
+
+        if (present_wallpaper_orientation_short == "land") {
+          present_wallpaper_orientation = "landscape";
+        } else {
+          present_wallpaper_orientation = "portrait";
+        }
+
+
+
+
+
+
+
+
+
+        // let keys = Object.keys(originaljson[present_wallpaper_code]?.link ?? {});
+        // let order = ['4k', '2k', '1080', '720', '510', '480']; // Define the desired order
+
+        // let present_wallpaper_maxquality = order.filter(key => keys.includes(key))[0];
+        let present_wallpaper_maxquality = give_max_least_quality(present_wallpaper_code, "max");
+
+
+
+        let present_wallpaper_div = `<div class="wallpaper ` + present_wallpaper_orientation + `">
+      <div class="image">` + preciew_innerhtml + `</a></div>
+      <div class="details">
+        <h2>` + present_wallpaper_name + `</h2>
+        <p>Quality : ` + present_wallpaper_maxquality + `</p>
+      </div>
+    </div>
+  
+  `;
+
+
+        wallpaper_container.innerHTML += present_wallpaper_div;
+
+
+      }
+
+      console.log("next_showable_wallpapewr" + next_showable_wallpapewr);
+      // next_showable_wallpapewr = next_showable_wallpapewr + wallpaper_load_count;
+      console.log("total wallpapers" + total_wallpapers);
+      console.log("wallpaper counttttttttttttttttttttttttttttttttttt" + wallpaper_count);
+
+      next_showable_wallpapewr = next_showable_wallpapewr + wallpaper_load_count;
+      console.log(next_showable_wallpapewr);
+      console.log(total_wallpapers);
+
+    }
+
+
+
+
+
+
+
+
+    function loadmore() {
+      let spinner = document.querySelector('#loadmore_button i');
+
+      if (next_showable_wallpapewr < total_wallpapers) {
+        console.log("ppppppppppppppppppppppppppppppppppppppppppppp");
+        show_similar_producta();
+        document.getElementById("loadmore").style.display = "flex";
+
+      } else {
+        console.log("MAX LIMIT REACHED");
+        document.getElementById("loadmore").style.display = "none";
+      }
+      console.log("next_showable_wallpapewr" + next_showable_wallpapewr);
+      // next_showable_wallpapewr = next_showable_wallpapewr + wallpaper_load_count;
+      console.log("total wallpapers" + total_wallpapers);
+      console.log("total wallpapers" + wallpaper_count);
+
+      console.log("more wallpaper loaded");
+
+      // if (loadstatus == true) {
+      //   loadstatus = false;
+      //   spinner.style.animation = 'none';
+      //   console.log(loadstatus);
+      // } else {
+      //   loadstatus = true;
+      //   spinner.style.animation = 'spin 2s linear infinite';
+      //   console.log(loadstatus);
+
+      // }
+
+
+    }
+
+
+
+
+
+    let old_played_video = "no_video";
+
+function playvideowallpaper(playindex, video_link) {
+
+  let video = document.getElementById("wallpaper" + playindex);
+  console.log("before adding" + video.src);
+
+  let videosrc = video.src;
+
+  let videoid = "wallpaper" + playindex;
+
+  if (videosrc == video_link) {
+    console.log("already done");
+  } else {
+    video.src = video_link;
+  }
+
+  console.log("After adding" + video.src);
+
+
+
+  let loader = document.getElementById("loader" + playindex);
+  //loader.style.display = "flex";
+
+
+  if (video) {
+    if (!video.error && video.readyState > 2) {
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    } else {
+      video.play();
+      loader.style.display = "flex";
+
+    }
+  }
+
+
+
+
+  // Listen for the "progress" event to update the loading bar
+  
+  if(video){
+  video.addEventListener("progress", updateLoadingBar);
+  }
+
+  function updateLoadingBar() {
+    const buffered = video.buffered;
+    if (buffered.length > 0) {
+      const loadedPercentage = (buffered.end(0) / video.duration) * 100;
+      console.log(loadedPercentage + "%");
+      if (loadedPercentage <= 99) {
+        loader.style.display = "none";
+      }
+
+    }
+  }
+
+
+
+
+
+
+
+
+
+  if (old_played_video != "no_video" && videoid != old_played_video) {
+    let previous_video = document.getElementById(old_played_video);
+    previous_video.pause();
+  }
+  console.log(old_played_video);
+
+  old_played_video = "wallpaper" + playindex;
+
+}
+
+
+
+
+  </script>
+</body>
+
+</html>

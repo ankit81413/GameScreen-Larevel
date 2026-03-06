@@ -12,8 +12,8 @@ import { store } from '@/routes/register';
 export default function Register() {
     return (
         <AuthLayout
-            title="Create an account"
-            description="Enter your details below to create your account"
+            title="Create Account"
+            description="Set up your Game Screen account"
         >
             <Head title="Register" />
             <Form
@@ -24,9 +24,14 @@ export default function Register() {
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
+                        <div className="grid gap-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label
+                                    htmlFor="name"
+                                    className="text-sm font-medium text-[#d1d5db]"
+                                >
+                                    Name
+                                </Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -36,6 +41,8 @@ export default function Register() {
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Full name"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{ padding: '10px' }}
                                 />
                                 <InputError
                                     message={errors.name}
@@ -44,7 +51,12 @@ export default function Register() {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label
+                                    htmlFor="email"
+                                    className="text-sm font-medium text-[#d1d5db]"
+                                >
+                                    Email address
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -53,12 +65,19 @@ export default function Register() {
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{ padding: '10px' }}
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
+                                <Label
+                                    htmlFor="password"
+                                    className="text-sm font-medium text-[#d1d5db]"
+                                >
+                                    Password
+                                </Label>
                                 <Input
                                     id="password"
                                     type="password"
@@ -67,12 +86,17 @@ export default function Register() {
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{ padding: '10px' }}
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
+                                <Label
+                                    htmlFor="password_confirmation"
+                                    className="text-sm font-medium text-[#d1d5db]"
+                                >
                                     Confirm password
                                 </Label>
                                 <Input
@@ -83,6 +107,8 @@ export default function Register() {
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{ padding: '10px' }}
                                 />
                                 <InputError
                                     message={errors.password_confirmation}
@@ -91,8 +117,9 @@ export default function Register() {
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full"
+                                className="mt-1 h-11 w-full rounded-lg bg-[#ff9900] font-semibold text-black transition-colors hover:bg-[#f4a825]"
                                 tabIndex={5}
+                                disabled={processing}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -100,9 +127,13 @@ export default function Register() {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="pt-1 text-center text-sm text-[#9ca3af]">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
+                            <TextLink
+                                href={login()}
+                                tabIndex={6}
+                                className="text-[#f5c16f] decoration-[#f5c16f]/40 hover:text-[#ffb347]"
+                            >
                                 Log in
                             </TextLink>
                         </div>

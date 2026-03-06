@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFullScreen } from '@/hooks/useFullScreen';
 
 const AUTOPLAY_STORAGE_KEY = 'viewWallpaperAutoplay';
@@ -7,6 +7,29 @@ export default function ViewWallpaperDisplay(props: any) {
     // console.log(props);
     const isVideoDisplay = Number(props.type) === 2;
     const preferredQuality = 720;
+    const qualityOptions = useMemo(() => {
+        const links = Array.isArray(props.links) ? props.links : [];
+
+        return links
+            .map((link: any) => {
+                const qualityText = String(link?.quality ?? '');
+                const qualityValue = Number.parseInt(qualityText, 10);
+                const qualityLabel = qualityText.endsWith('p')
+                    ? qualityText
+                    : `${qualityValue}p`;
+
+                return {
+                    url: link?.url ?? '',
+                    qualityValue,
+                    qualityLabel,
+                };
+            })
+            .filter(
+                (option: any) =>
+                    !!option.url && !Number.isNaN(option.qualityValue),
+            )
+            .sort((a: any, b: any) => b.qualityValue - a.qualityValue);
+    }, [props.links]);
 
     const { toggleFullScreen } = useFullScreen();
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -15,6 +38,8 @@ export default function ViewWallpaperDisplay(props: any) {
     const [showPlayButton, setShowPlayButton] = useState(true);
     const [displayUrl, setDisplayUrl] = useState(props.thumbnail ?? '');
     const [displayQuality, setDisplayQuality] = useState('720p');
+    const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
+    const [resumeOnQualityChange, setResumeOnQualityChange] = useState(false);
     const [autoplayEnabled, setAutoplayEnabled] = useState(() => {
         if (typeof window === 'undefined') {
             return false;
@@ -28,44 +53,27 @@ export default function ViewWallpaperDisplay(props: any) {
     > | null>(null);
 
     useEffect(() => {
-        const links = Array.isArray(props.links) ? props.links : [];
-
-        if (!links.length) {
+        if (!qualityOptions.length) {
             setDisplayUrl(props.thumbnail ?? '');
             setDisplayQuality('720p');
             return;
         }
 
-        const parsedLinks = links
-            .map((link: any) => ({
-                ...link,
-                qualityValue: Number.parseInt(link.quality, 10),
-            }))
-            .filter((link: any) => !Number.isNaN(link.qualityValue));
-
-        if (!parsedLinks.length) {
-            setDisplayUrl(props.thumbnail ?? '');
-            setDisplayQuality('720p');
-            return;
-        }
-
-        const exactMatch = parsedLinks.find(
+        const exactMatch = qualityOptions.find(
             (link: any) => link.qualityValue === preferredQuality,
         );
 
-        const lowerMatch = parsedLinks
+        const lowerMatch = qualityOptions
             .filter((link: any) => link.qualityValue < preferredQuality)
             .sort((a: any, b: any) => b.qualityValue - a.qualityValue)[0];
 
-        const fallbackMatch = parsedLinks.sort(
-            (a: any, b: any) => a.qualityValue - b.qualityValue,
-        )[0];
+        const fallbackMatch = qualityOptions[0];
 
         const selectedLink = exactMatch ?? lowerMatch ?? fallbackMatch;
 
         setDisplayUrl(selectedLink?.url ?? props.thumbnail ?? '');
-        setDisplayQuality(selectedLink?.quality ?? '720p');
-    }, [props.links, props.thumbnail, preferredQuality]);
+        setDisplayQuality(selectedLink?.qualityLabel ?? '720p');
+    }, [qualityOptions, props.thumbnail, preferredQuality]);
 
     useEffect(() => {
         const onFullscreenChange = () => {
@@ -132,6 +140,10 @@ export default function ViewWallpaperDisplay(props: any) {
         autoPlayVideo();
     }, [autoplayEnabled, canPlayDisplayVideo, displayUrl, isVideoDisplay]);
 
+    useEffect(() => {
+        setIsQualityMenuOpen(false);
+    }, [displayUrl]);
+
     const handleFullscreen = () => {
         toggleFullScreen('display_content');
     };
@@ -194,17 +206,59 @@ export default function ViewWallpaperDisplay(props: any) {
         setAutoplayEnabled((currentValue) => !currentValue);
     };
 
+    const openQualityMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        setIsQualityMenuOpen(true);
+    };
+
+    const selectQuality = (option: any) => {
+        if (!option?.url || option.url === displayUrl) {
+            setIsQualityMenuOpen(false);
+            return;
+        }
+
+        if (isVideoDisplay) {
+            const wasPlaying = !!videoRef.current && !videoRef.current.paused;
+            if (videoRef.current) {
+                videoRef.current.pause();
+            }
+            setResumeOnQualityChange(wasPlaying);
+            setCanPlayDisplayVideo(false);
+        }
+
+        setDisplayUrl(option.url);
+        setDisplayQuality(option.qualityLabel);
+        setIsQualityMenuOpen(false);
+    };
+
     return (
         <>
-            <div id="video_quality">
-                <h2>Choose quality</h2>
-                <ul id="video_quality_list">
-                    <li>1080p</li>
-                    <li>720p</li>
-                    <li>480p</li>
-                </ul>
-                <button>Cancel</button>
-            </div>
+            {isQualityMenuOpen && (
+                <div
+                    id="video_quality_backdrop"
+                    onClick={() => setIsQualityMenuOpen(false)}
+                >
+                    <div id="video_quality" onClick={(e) => e.stopPropagation()}>
+                        <h2>Choose quality</h2>
+                        <ul id="video_quality_list">
+                            {qualityOptions.map((option: any) => (
+                                <li
+                                    key={`${option.qualityLabel}-${option.url}`}
+                                    onClick={() => selectQuality(option)}
+                                    style={{
+                                        outline:
+                                            option.qualityLabel === displayQuality
+                                                ? '2px solid #ff9900'
+                                                : 'none',
+                                    }}
+                                >
+                                    {option.qualityLabel}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
 
             {isVideoDisplay ? (
                 <div className="display">
@@ -236,6 +290,10 @@ export default function ViewWallpaperDisplay(props: any) {
                             }}
                             onCanPlayThrough={() => {
                                 setCanPlayDisplayVideo(true);
+                                if (resumeOnQualityChange) {
+                                    videoRef.current?.play().catch(() => null);
+                                    setResumeOnQualityChange(false);
+                                }
                             }}
                             onPlay={() => {
                                 setIsPlaying(true);
@@ -269,9 +327,11 @@ export default function ViewWallpaperDisplay(props: any) {
                                 <span>{autoplayEnabled ? 'Auto' : 'Manual'}</span>
                             </div>
                             <div id="dis_quality" style={{ display: 'flex' }}>
-                                <i className="fa-solid fa-gear" id="fa_gear">
-                                    {displayQuality}
-                                </i>
+                                <div onClick={openQualityMenu}>
+                                    <i className="fa-solid fa-gear" id="fa_gear">
+                                        {displayQuality}
+                                    </i>
+                                </div>
                             </div>
 
                             <div id="dis_fullscreen" onClick={handleFullscreen}>
@@ -289,7 +349,7 @@ export default function ViewWallpaperDisplay(props: any) {
                         />
 
                         <div id="setting">
-                            <div id="dis_quality">
+                            <div id="dis_quality" onClick={openQualityMenu}>
                                 <i className="fa-solid fa-gear" id="fa_gear">
                                     {displayQuality}
                                 </i>

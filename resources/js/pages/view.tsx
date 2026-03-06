@@ -7,6 +7,10 @@ import Footer from '@/components/includes/Footer';
 import '../../css/view.css';
 import ViewWallpaperDisplay from '@/components/pages/view/View_wallpaper_display';
 import View_tag from '@/components/pages/view/View_Tag';
+import React, { useEffect } from 'react';
+import WallpaperCard from '@/components/common/WallpaperCard';
+import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
+import { usePaginatedList } from '@/hooks/use-paginated-list';
 
 export default function Welcome({
     canRegister = true,
@@ -15,7 +19,74 @@ export default function Welcome({
 }) {
     const { auth } = usePage<SharedData>().props as any;
     const { wallpaper } = usePage().props as any;
-    console.log(wallpaper);
+    const {
+        items: similarWallpapers,
+        isLoading: isSimilarWallpapersLoading,
+        hasMore: hasMoreSimilarWallpapers,
+        loadMore: loadMoreSimilarWallpapers,
+    } = usePaginatedList({
+        initialData: {
+            data: [],
+            next_page_url: '/similar-wallpapers?page=1',
+        },
+    });
+    const downloadLinks = (Array.isArray(wallpaper?.links) ? wallpaper.links : [])
+        .map((link: any) => {
+            const qualityText = String(link?.quality ?? '');
+            const qualityValue = Number.parseInt(qualityText, 10);
+            const qualityLabel = qualityText.endsWith('p')
+                ? qualityText
+                : `${qualityValue}p`;
+
+            return {
+                ...link,
+                qualityValue,
+                qualityLabel,
+            };
+        })
+        .filter((link: any) => !Number.isNaN(link.qualityValue) && !!link.url)
+        .sort((a: any, b: any) => b.qualityValue - a.qualityValue);
+
+    useEffect(() => {
+        if (!similarWallpapers.length && hasMoreSimilarWallpapers) {
+            loadMoreSimilarWallpapers();
+        }
+    }, [
+        similarWallpapers.length,
+        hasMoreSimilarWallpapers,
+        loadMoreSimilarWallpapers,
+    ]);
+
+    const handleShareWallpaper = async () => {
+        const wallpaperUrl =
+            typeof window !== 'undefined'
+                ? `${window.location.origin}/view/${wallpaper.code}`
+                : `/view/${wallpaper.code}`;
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: wallpaper?.name ?? 'Wallpaper',
+                    text: 'Check out this wallpaper',
+                    url: wallpaperUrl,
+                });
+                return;
+            }
+
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(wallpaperUrl);
+                window.alert('Wallpaper URL copied to clipboard');
+                return;
+            }
+
+            window.prompt('Copy this wallpaper URL:', wallpaperUrl);
+        } catch (error) {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(wallpaperUrl);
+                window.alert('Wallpaper URL copied to clipboard');
+            }
+        }
+    };
 
     return (
         <>
@@ -41,7 +112,7 @@ export default function Welcome({
                             <h2 id="name-text">hi</h2>
                         </div>
                         <div className="buttons">
-                            <div className="share">
+                            <div className="share" onClick={handleShareWallpaper}>
                                 <i className="fa-solid fa-arrow-up-from-bracket"></i>
                             </div>
                             <div className="save">
@@ -61,47 +132,18 @@ export default function Welcome({
                         </div>
                         <div id="similar_wallpapers">
                             <section id="wallpaper-container">
-                                <div className="wallpaper landscape">
-                                    <div className="image">
-                                        <a
-                                            target="_blank"
-                                            href="image.html?value=0008"
-                                        >
-                                            <img
-                                                src="https://www.dropbox.com/scl/fi/pii9g3dejrnqi37pusjxk/480p_2k_Avengers.jpg?rlkey=je4urlmrp26wy86jjxaxqz13c&amp;dl=1"
-                                                alt="wallpaper"
-                                                id="wallpaper0"
-                                            />
-                                        </a>
-                                    </div>
-                                    <div className="details">
-                                        <h2>Avengers - Marvel</h2>
-                                        <p>Quality : 4k</p>
-                                    </div>
-                                </div>
-
-                                <div className="wallpaper landscape">
-                                    <div className="image">
-                                        <a
-                                            target="_blank"
-                                            href="image.html?value=0002"
-                                        >
-                                            <img
-                                                src="https://www.dropbox.com/scl/fi/1jjal5ryknk68zyfmn0nx/480p_2k_1727900138018.jpg?rlkey=5neqajj17kfw75ly7y7r3s25j&amp;dl=1"
-                                                alt="wallpaper"
-                                                id="wallpaper1"
-                                            />
-                                        </a>
-                                    </div>
-                                    <div className="details">
-                                        <h2>
-                                            The Ultimate Spiderman - Miles
-                                            Morales Edition
-                                        </h2>
-                                        <p>Quality : 4k</p>
-                                    </div>
-                                </div>
+                                {similarWallpapers.map((item: any, index: number) => (
+                                    <WallpaperCard
+                                        key={`${item.id}-${index}`}
+                                        item={item}
+                                    />
+                                ))}
                             </section>
+                            <LoadMoreWallpapersButton
+                                onClick={loadMoreSimilarWallpapers}
+                                loading={isSimilarWallpapersLoading}
+                                hasMore={hasMoreSimilarWallpapers}
+                            />
                         </div>
                     </div>
                 </div>
@@ -111,21 +153,13 @@ export default function Welcome({
                             <i className="fa-regular fa-circle-down"></i>Download
                         </h1>
                         <ul id="download_option_list">
-                            <li className="download_option">
-                                <a href="download.html?value=0028&amp;quality=1080p">
-                                    1080p (2.37 MB)
-                                </a>
-                            </li>
-                            <li className="download_option">
-                                <a href="download.html?value=0028&amp;quality=720p">
-                                    720p (920.85 KB)
-                                </a>
-                            </li>
-                            <li className="download_option">
-                                <a href="download.html?value=0028&amp;quality=480p">
-                                    480p (267.82 KB)
-                                </a>
-                            </li>
+                            {downloadLinks.map((link: any) => (
+                                <li className="download_option" key={link.url}>
+                                    <a href={link.url} target="_blank">
+                                        {link.qualityLabel}
+                                    </a>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 </div>

@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::table('wallpapers', function (Blueprint $table) {
             if (!Schema::hasColumn('wallpapers', 'is_private')) {
-                $table->boolean('is_private')->default(false)->after('owner_id');
+                $table->boolean('is_private')->default(false);
             }
 
             if (!Schema::hasColumn('wallpapers', 'deleted_at')) {

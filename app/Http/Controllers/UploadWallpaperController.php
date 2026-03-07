@@ -7,6 +7,7 @@ use App\Models\Wallpaper;
 use App\Models\WallpaperLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -64,16 +65,31 @@ class UploadWallpaperController extends Controller
                 $thumbnailUrl = Storage::url($thumbPath);
             }
 
-            $wallpaper = Wallpaper::query()->create([
-                'owner_id' => $user->id,
-                'is_private' => false,
-                'code' => $code,
-                'name' => $validated['name'],
-                'thumbnail' => $thumbnailUrl,
-                'quality_thumbnail' => $thumbnailUrl,
-                'type' => (int) $validated['type'],
-                'orientation' => $validated['orientation'],
-            ]);
+            $wallpaper = null;
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $code = $this->generateNextWallpaperCode();
+                try {
+                    $wallpaper = Wallpaper::query()->create([
+                        'owner_id' => $user->id,
+                        'is_private' => false,
+                        'code' => $code,
+                        'name' => $validated['name'],
+                        'thumbnail' => $thumbnailUrl,
+                        'quality_thumbnail' => $thumbnailUrl,
+                        'type' => (int) $validated['type'],
+                        'orientation' => $validated['orientation'],
+                    ]);
+                    break;
+                } catch (UniqueConstraintViolationException $exception) {
+                    if ($attempt === 4) {
+                        throw $exception;
+                    }
+                }
+            }
+
+            if (!$wallpaper) {
+                throw new \RuntimeException('Could not allocate unique wallpaper code.');
+            }
 
             $this->createLinksFromUploadedFile(
                 wallpaper: $wallpaper,
@@ -426,20 +442,12 @@ class UploadWallpaperController extends Controller
 
     private function generateNextWallpaperCode(): string
     {
-        $codes = Wallpaper::query()->pluck('code');
-        $maxNumeric = $codes
-            ->map(function ($code) {
-                $value = (string) $code;
-                if (!preg_match('/^\d+$/', $value)) {
-                    return null;
-                }
+        $maxNumeric = (int) (Wallpaper::withTrashed()
+            ->whereRaw("code REGEXP '^[0-9]+$'")
+            ->selectRaw('MAX(CAST(code AS UNSIGNED)) as max_code')
+            ->value('max_code') ?? 0);
 
-                return (int) $value;
-            })
-            ->filter(fn ($value) => $value !== null)
-            ->max();
-
-        $next = ((int) $maxNumeric) + 1;
+        $next = $maxNumeric + 1;
 
         return str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }

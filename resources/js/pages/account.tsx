@@ -1,10 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import Header from '@/components/includes/Header';
-import Footer from '@/components/includes/Footer';
+import AccountDashboardLayout from '@/layouts/account-dashboard-layout';
 import type { SharedData } from '@/types';
-import '../../css/style.css';
-import '../../css/new_style.css';
-import '../../css/account.css';
 import React, { useEffect, useMemo, useState } from 'react';
 import { showGamingAlert } from '@/lib/gaming-alerts';
 
@@ -93,38 +89,36 @@ export default function Account() {
     return (
         <>
             <Head title="Account" />
-            <Header />
-
-            <section className="account_page">
+            <AccountDashboardLayout section="overview">
                 <div className="account_shell">
-                    <div className="account_hero">
-                        <div className="account_avatar">
-                            {String(user?.name ?? 'U')
-                                .trim()
-                                .charAt(0)
-                                .toUpperCase()}
-                        </div>
+                    <div className="account_top">
                         <div className="account_identity">
-                            <h1>{user?.name ?? 'User Account'}</h1>
-                            <p>@{user?.username ?? 'username'}</p>
-                            <div className="account_completion">
-                                <span>Profile completion: {profileCompletion}%</span>
-                                <div className="meter">
-                                    <div
-                                        className="meter_fill"
-                                        style={{ width: `${profileCompletion}%` }}
-                                    />
-                                </div>
+                            <div className="account_avatar">
+                                {String(user?.name ?? 'U')
+                                    .trim()
+                                    .charAt(0)
+                                    .toUpperCase()}
+                            </div>
+                            <div>
+                                <h1>{user?.name ?? 'User Account'}</h1>
+                                <p>@{user?.username ?? 'username'}</p>
                             </div>
                         </div>
-                        <div className="account_actions">
-                            <Link href="/settings/profile" className="primary_cta">
-                                Edit Profile
-                            </Link>
-                            <Link href="/settings/password" className="ghost_cta">
-                                Security
-                            </Link>
-                        </div>
+                        <Link href="/settings/profile" className="primary_cta">
+                            <i className="fa-regular fa-pen-to-square"></i> Edit profile
+                        </Link>
+                    </div>
+
+                    <div className="account_quick_actions">
+                        <Link href="/account/edit-profile" className="quick_link">
+                            Edit Profile
+                        </Link>
+                        <Link href="/account/change-password" className="quick_link">
+                            Change Password
+                        </Link>
+                        <Link href="/account/delete-account" className="quick_link danger">
+                            Delete Account
+                        </Link>
                     </div>
 
                     <div className="account_stats">
@@ -137,93 +131,51 @@ export default function Account() {
                             <p>{interests.length}</p>
                         </div>
                         <div className="stat_card">
-                            <h3>Recent Searches</h3>
+                            <h3>Searches</h3>
                             <p>{recentSearches.length}</p>
                         </div>
+                        <div className="stat_card">
+                            <h3>Profile</h3>
+                            <p>{profileCompletion}%</p>
+                        </div>
                     </div>
 
-                    <div className="account_grid">
-                        <div className="panel">
-                            <div className="panel_head">
-                                <h2>Saved Wallpapers</h2>
-                            </div>
-                            {isLoading ? (
-                                <p className="muted">Loading...</p>
-                            ) : savedWallpapers.length ? (
-                                <div className="saved_wall_grid">
-                                    {savedWallpapers.map((item) =>
-                                        item.wallpaper ? (
-                                            <Link
-                                                key={item.id}
-                                                href={`/view/${item.wallpaper.code}`}
-                                                className="saved_wall_card"
-                                            >
-                                                <img
-                                                    src={item.wallpaper.thumbnail}
-                                                    alt={item.wallpaper.name}
-                                                />
-                                                <span>{item.wallpaper.name}</span>
-                                            </Link>
-                                        ) : null,
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="muted">No saved wallpapers yet.</p>
-                            )}
-                        </div>
+                    <div className="account_tabs">
+                        <span className="active">Gallery ({savedWallpapers.length})</span>
+                        <span>Interests ({interests.length})</span>
+                        <span>Searches ({recentSearches.length})</span>
+                    </div>
 
-                        <div className="panel">
-                            <div className="panel_head">
-                                <h2>Your Interests</h2>
-                            </div>
-                            {isLoading ? (
-                                <p className="muted">Loading...</p>
-                            ) : interests.length ? (
-                                <div className="interest_grid">
-                                    {interests.map((item) => (
-                                        <div key={item.id} className="interest_chip">
-                                            {item.thumbnail ? (
-                                                <img src={item.thumbnail} alt={item.name} />
-                                            ) : (
-                                                <div className="placeholder" />
-                                            )}
-                                            <span>{item.name}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="muted">No interests selected yet.</p>
-                            )}
-                        </div>
-
-                        <div className="panel panel_full">
-                            <div className="panel_head">
-                                <h2>Recent Searches</h2>
-                            </div>
-                            {isLoading ? (
-                                <p className="muted">Loading...</p>
-                            ) : recentSearches.length ? (
-                                <div className="search_chip_row">
-                                    {recentSearches.map((query) => (
+                    <div className="panel panel_full">
+                        {isLoading ? (
+                            <p className="muted">Loading...</p>
+                        ) : savedWallpapers.length ? (
+                            <div className="saved_wall_grid">
+                                {savedWallpapers.map((item) =>
+                                    item.wallpaper ? (
                                         <Link
-                                            key={query}
-                                            href={`/auto-search?search=${encodeURIComponent(query)}`}
-                                            className="search_chip"
+                                            key={item.id}
+                                            href={`/view/${item.wallpaper.code}`}
+                                            className="saved_wall_card"
                                         >
-                                            <i className="fa-solid fa-magnifying-glass" />
-                                            {query}
+                                            <img
+                                                src={item.wallpaper.thumbnail}
+                                                alt={item.wallpaper.name}
+                                            />
+                                            <span>{item.wallpaper.name}</span>
                                         </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="muted">No recent searches yet.</p>
-                            )}
-                        </div>
+                                    ) : null,
+                                )}
+                            </div>
+                        ) : (
+                            <div className="empty_block">
+                                <h2>No content yet</h2>
+                                <p>Save wallpapers to see your gallery here.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </section>
-
-            <Footer />
+            </AccountDashboardLayout>
         </>
     );
 }

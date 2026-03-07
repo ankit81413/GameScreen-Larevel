@@ -6,6 +6,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\BannerWallpaperController;
+use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\SimilarWallpaperController;
 use App\Http\Controllers\ViewPageController;
 use App\Http\Controllers\DownloadController;
@@ -46,6 +47,14 @@ Route::get('/view/{code}',[ViewPageController::class,'view'])->name('viewWallpap
 Route::get('/account', function () {
     return Inertia::render('account');
 })->middleware(['auth'])->name('account');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/account/edit-profile', [AccountSettingsController::class, 'editProfile'])->name('account.profile.edit');
+    Route::patch('/account/edit-profile', [AccountSettingsController::class, 'updateProfile'])->name('account.profile.update');
+    Route::get('/account/change-password', [AccountSettingsController::class, 'editPassword'])->name('account.password.edit');
+    Route::put('/account/change-password', [AccountSettingsController::class, 'updatePassword'])->name('account.password.update');
+    Route::get('/account/delete-account', [AccountSettingsController::class, 'deleteAccount'])->name('account.delete.edit');
+    Route::delete('/account/delete-account', [AccountSettingsController::class, 'destroy'])->name('account.delete.destroy');
+});
 
 // Route::get('/import-wallpapers', [ImportController::class, 'import']);
 // Route::get('/viewall', [ImportController::class, 'view']);

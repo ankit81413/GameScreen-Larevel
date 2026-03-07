@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+import { showGamingAlert } from '@/lib/gaming-alerts';
 
 export default function Register() {
     return (
@@ -20,6 +21,25 @@ export default function Register() {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
+                onSuccess={() => {
+                    showGamingAlert({
+                        type: 'success',
+                        title: 'Account Created',
+                        message: 'Complete your profile setup.',
+                    });
+                    router.visit('/onboarding/profile');
+                }}
+                onError={(errors) => {
+                    const firstError = Object.values(errors ?? {})[0];
+                    showGamingAlert({
+                        type: 'error',
+                        title: 'Signup Failed',
+                        message:
+                            typeof firstError === 'string'
+                                ? firstError
+                                : 'Please check the form and try again.',
+                    });
+                }}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
@@ -27,25 +47,49 @@ export default function Register() {
                         <div className="grid gap-5">
                             <div className="grid gap-2">
                                 <Label
-                                    htmlFor="name"
+                                    htmlFor="first_name"
                                     className="text-sm font-medium text-[#d1d5db]"
                                 >
-                                    Name
+                                    First Name
                                 </Label>
                                 <Input
-                                    id="name"
+                                    id="first_name"
                                     type="text"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
+                                    autoComplete="given-name"
+                                    name="first_name"
+                                    placeholder="First name"
                                     className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
                                     style={{ padding: '10px' }}
                                 />
                                 <InputError
-                                    message={errors.name}
+                                    message={errors.first_name}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label
+                                    htmlFor="last_name"
+                                    className="text-sm font-medium text-[#d1d5db]"
+                                >
+                                    Last Name
+                                </Label>
+                                <Input
+                                    id="last_name"
+                                    type="text"
+                                    required
+                                    tabIndex={2}
+                                    autoComplete="family-name"
+                                    name="last_name"
+                                    placeholder="Last name"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{ padding: '10px' }}
+                                />
+                                <InputError
+                                    message={errors.last_name}
                                     className="mt-2"
                                 />
                             </div>
@@ -60,15 +104,34 @@ export default function Register() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    required
-                                    tabIndex={2}
+                                    tabIndex={3}
                                     autoComplete="email"
                                     name="email"
-                                    placeholder="email@example.com"
+                                    placeholder="email@example.com (optional)"
                                     className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
                                     style={{ padding: '10px' }}
                                 />
                                 <InputError message={errors.email} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label
+                                    htmlFor="username"
+                                    className="text-sm font-medium text-[#d1d5db]"
+                                >
+                                    Username
+                                </Label>
+                                <Input
+                                    id="username"
+                                    type="text"
+                                    required
+                                    tabIndex={4}
+                                    name="username"
+                                    placeholder="unique_username"
+                                    className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
+                                    style={{ padding: '10px' }}
+                                />
+                                <InputError message={errors.username} />
                             </div>
 
                             <div className="grid gap-2">
@@ -82,7 +145,7 @@ export default function Register() {
                                     id="password"
                                     type="password"
                                     required
-                                    tabIndex={3}
+                                    tabIndex={5}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
@@ -103,7 +166,7 @@ export default function Register() {
                                     id="password_confirmation"
                                     type="password"
                                     required
-                                    tabIndex={4}
+                                    tabIndex={6}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
@@ -118,7 +181,7 @@ export default function Register() {
                             <Button
                                 type="submit"
                                 className="mt-1 h-11 w-full rounded-lg bg-[#ff9900] font-semibold text-black transition-colors hover:bg-[#f4a825]"
-                                tabIndex={5}
+                                tabIndex={7}
                                 disabled={processing}
                                 data-test="register-user-button"
                             >
@@ -131,7 +194,7 @@ export default function Register() {
                             Already have an account?{' '}
                             <TextLink
                                 href={login()}
-                                tabIndex={6}
+                                tabIndex={8}
                                 className="text-[#f5c16f] decoration-[#f5c16f]/40 hover:text-[#ffb347]"
                             >
                                 Log in

@@ -21,7 +21,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'username',
         'password',
+        'birthdate',
+        'age_confirmed',
+        'gender',
+        'bio',
     ];
 
     /**
@@ -47,6 +52,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'birthdate' => 'date',
+            'age_confirmed' => 'boolean',
         ];
     }
 }

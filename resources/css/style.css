@@ -146,6 +146,13 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  transition: background-color .2s ease;
 }
 
 .search_with_code::after {
@@ -155,6 +162,10 @@ header {
   height: 6px;
   position: absolute;
   border-radius: 2px;
+}
+
+.search_with_code:hover {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .search_focus_backdrop {
@@ -184,6 +195,8 @@ header {
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-top: 0;
   overflow: hidden;
+  max-height: min(72vh, 620px);
+  overflow-y: auto;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
 }
 
@@ -197,6 +210,59 @@ header {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.search_block {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.search_block:first-child {
+  border-top: 0;
+}
+
+.code_search_block {
+  padding-bottom: 10px;
+}
+
+.code_digit_form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+}
+
+.code_digit_inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.code_digit_input {
+  width: 38px !important;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid #cfd4dc !important;
+  background: #ffffff !important;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.code_digit_input:focus {
+  border-color: #ff9900 !important;
+  box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.22);
+}
+
+.code_go_button {
+  border: 0;
+  border-radius: 8px;
+  background: #111017;
+  color: #fff;
+  font-weight: 600;
+  padding: 9px 14px;
+  cursor: pointer;
 }
 
 .search_history_list {

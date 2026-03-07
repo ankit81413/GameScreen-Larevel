@@ -1,0 +1,44 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        if (Schema::hasTable('saved_wallpapers')) {
+            return;
+        }
+
+        Schema::create('saved_wallpapers', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('wallpaper_id')->constrained('wallpapers')->cascadeOnDelete();
+            $table->string('wallpaper_code', 50)->nullable();
+            $table->string('wallpaper_name')->nullable();
+            $table->string('wallpaper_thumbnail')->nullable();
+            $table->string('wallpaper_type', 50)->nullable();
+            $table->timestamps();
+
+            $table->unique(['user_id', 'wallpaper_id']);
+            $table->index(['user_id', 'id']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        if (!Schema::hasTable('saved_wallpapers')) {
+            return;
+        }
+
+        Schema::dropIfExists('saved_wallpapers');
+    }
+};

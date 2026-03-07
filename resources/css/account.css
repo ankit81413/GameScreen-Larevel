@@ -1,0 +1,237 @@
+.account_page {
+  background: radial-gradient(circle at 10% 10%, rgba(255, 153, 0, 0.13), transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(255, 153, 0, 0.08), transparent 45%),
+    #090c13;
+  min-height: calc(100vh - 140px);
+  padding: 18px;
+}
+
+.account_shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #f8fafc;
+}
+
+.account_hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid rgba(255, 153, 0, 0.28);
+  background: linear-gradient(145deg, #111827, #0b1222);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.account_avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: #ff9900;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.account_identity h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.account_identity p {
+  margin: 2px 0 10px;
+  color: #9ca3af;
+}
+
+.account_completion span {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.meter {
+  margin-top: 6px;
+  width: min(360px, 70vw);
+  height: 9px;
+  border-radius: 999px;
+  background: #1f2937;
+  overflow: hidden;
+}
+
+.meter_fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7b00, #ffcc66);
+}
+
+.account_actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.primary_cta,
+.ghost_cta {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.primary_cta {
+  background: #ff9900;
+  color: #111;
+}
+
+.ghost_cta {
+  border: 1px solid rgba(255, 153, 0, 0.44);
+  color: #ffcc80;
+}
+
+.account_stats {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat_card {
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0f1628;
+}
+
+.stat_card h3 {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.stat_card p {
+  margin: 6px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.account_grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.panel {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0f1628;
+  padding: 14px;
+}
+
+.panel_full {
+  grid-column: 1 / -1;
+}
+
+.panel_head h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+.saved_wall_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.saved_wall_card {
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0b1222;
+}
+
+.saved_wall_card img {
+  width: 100%;
+  height: 95px;
+  object-fit: cover;
+}
+
+.saved_wall_card span {
+  display: block;
+  padding: 8px;
+  color: #e2e8f0;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.interest_grid {
+  display: grid;
+  gap: 8px;
+}
+
+.interest_chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 6px;
+  background: #0b1222;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.interest_chip img,
+.interest_chip .placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #1f2937;
+}
+
+.interest_chip span {
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+.search_chip_row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search_chip {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 153, 0, 0.35);
+  color: #ffd59e;
+  background: rgba(255, 153, 0, 0.08);
+  padding: 7px 11px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media screen and (max-width: 900px) {
+  .account_hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .account_actions {
+    margin-left: 0;
+  }
+
+  .account_stats {
+    grid-template-columns: 1fr;
+  }
+
+  .account_grid {
+    grid-template-columns: 1fr;
+  }
+}

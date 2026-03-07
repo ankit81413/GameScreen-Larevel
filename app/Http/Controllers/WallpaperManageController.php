@@ -81,6 +81,34 @@ class WallpaperManageController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function restore(Request $request, int $wallpaper)
+    {
+        $item = Wallpaper::onlyTrashed()
+            ->where('id', $wallpaper)
+            ->firstOrFail();
+
+        abort_unless((int) $item->owner_id === (int) $request->user()->id, 403);
+
+        $item->restore();
+        $item->load(['links' => function ($query) {
+            $query->select(['id', 'wallpaper_id', 'quality', 'url']);
+        }]);
+
+        return response()->json([
+            'ok' => true,
+            'wallpaper' => [
+                'id' => $item->id,
+                'code' => $item->code,
+                'name' => $item->name,
+                'thumbnail' => $item->thumbnail,
+                'type' => $item->type,
+                'orientation' => $item->orientation,
+                'is_private' => (bool) $item->is_private,
+                'links' => $item->links,
+            ],
+        ]);
+    }
+
     private function authorizeOwnership(Request $request, Wallpaper $wallpaper): void
     {
         abort_unless((int) $wallpaper->owner_id === (int) $request->user()->id, 403);
@@ -111,4 +139,3 @@ class WallpaperManageController extends Controller
         return $tagIds;
     }
 }
-

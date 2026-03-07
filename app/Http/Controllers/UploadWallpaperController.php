@@ -37,6 +37,22 @@ class UploadWallpaperController extends Controller
         return response()->json($items);
     }
 
+    public function mineArchived(Request $request)
+    {
+        $user = $request->user();
+
+        $items = Wallpaper::onlyTrashed()
+            ->where('owner_id', $user->id)
+            ->with(['links' => function ($query) {
+                $query->select(['id', 'wallpaper_id', 'quality', 'url']);
+            }])
+            ->latest('deleted_at')
+            ->limit(60)
+            ->get(['id', 'code', 'name', 'thumbnail', 'type', 'orientation', 'is_private', 'deleted_at']);
+
+        return response()->json($items);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -58,12 +74,16 @@ class UploadWallpaperController extends Controller
             $filePath = $file->store('wallpapers/uploads', 'public');
             $fileUrl = Storage::url($filePath);
             $fileSizeKb = max(1, (int) round($file->getSize() / 1024));
+            $fileMimeType = (string) $file->getMimeType();
 
-            $thumbnailUrl = $fileUrl;
-            if (!empty($validated['thumbnail'])) {
-                $thumbPath = $validated['thumbnail']->store('wallpapers/uploads/thumbnails', 'public');
-                $thumbnailUrl = Storage::url($thumbPath);
-            }
+            $thumbAssets = $this->prepareThumbnailAssets(
+                validated: $validated,
+                uploadedRelativePath: $filePath,
+                uploadedUrl: $fileUrl,
+                uploadedMimeType: $fileMimeType,
+            );
+            $thumbnailUrl = $thumbAssets['thumbnail_url'];
+            $qualityThumbnailUrl = $thumbAssets['quality_thumbnail_url'];
 
             $wallpaper = null;
             for ($attempt = 0; $attempt < 5; $attempt++) {
@@ -75,7 +95,7 @@ class UploadWallpaperController extends Controller
                         'code' => $code,
                         'name' => $validated['name'],
                         'thumbnail' => $thumbnailUrl,
-                        'quality_thumbnail' => $thumbnailUrl,
+                        'quality_thumbnail' => $qualityThumbnailUrl,
                         'type' => (int) $validated['type'],
                         'orientation' => $validated['orientation'],
                     ]);
@@ -96,7 +116,7 @@ class UploadWallpaperController extends Controller
                 storedRelativePath: $filePath,
                 fileUrl: $fileUrl,
                 fileSizeKb: $fileSizeKb,
-                mimeType: (string) $file->getMimeType(),
+                mimeType: $fileMimeType,
             );
 
             $tagIds = $this->resolveTags($validated['tags'] ?? '');
@@ -181,6 +201,63 @@ class UploadWallpaperController extends Controller
                 'url' => $variant['url'],
             ]);
         }
+    }
+
+    /**
+     * @param array<string,mixed> $validated
+     * @return array{thumbnail_url:string,quality_thumbnail_url:string}
+     */
+    private function prepareThumbnailAssets(
+        array $validated,
+        string $uploadedRelativePath,
+        string $uploadedUrl,
+        string $uploadedMimeType,
+    ): array {
+        $sourceRelativePath = null;
+        $sourceMimeType = null;
+
+        if (!empty($validated['thumbnail'])) {
+            $thumbFile = $validated['thumbnail'];
+            $sourceRelativePath = $thumbFile->store('wallpapers/uploads/thumbnails/source', 'public');
+            $sourceMimeType = (string) $thumbFile->getMimeType();
+        } elseif (Str::startsWith($uploadedMimeType, 'image/')) {
+            $sourceRelativePath = $uploadedRelativePath;
+            $sourceMimeType = $uploadedMimeType;
+        } elseif ($this->hasFfmpeg()) {
+            $frame = $this->extractVideoFrame($uploadedRelativePath);
+            if ($frame) {
+                $sourceRelativePath = $frame;
+                $sourceMimeType = 'image/jpeg';
+            }
+        }
+
+        if (!$sourceRelativePath || !$sourceMimeType || !Str::startsWith($sourceMimeType, 'image/')) {
+            return [
+                'thumbnail_url' => $uploadedUrl,
+                'quality_thumbnail_url' => $uploadedUrl,
+            ];
+        }
+
+        $sourceAbsolutePath = Storage::disk('public')->path($sourceRelativePath);
+        $sourceUrl = Storage::url($sourceRelativePath);
+
+        $thumb480 = $this->createImageVariant(
+            sourcePath: $sourceAbsolutePath,
+            sourceRelativePath: $sourceRelativePath,
+            mimeType: $sourceMimeType,
+            targetHeight: 480,
+        );
+        $thumb720 = $this->createImageVariant(
+            sourcePath: $sourceAbsolutePath,
+            sourceRelativePath: $sourceRelativePath,
+            mimeType: $sourceMimeType,
+            targetHeight: 720,
+        );
+
+        return [
+            'thumbnail_url' => $thumb480['url'] ?? $sourceUrl,
+            'quality_thumbnail_url' => $thumb720['url'] ?? ($thumb480['url'] ?? $sourceUrl),
+        ];
     }
 
     private function createVideoLinks(
@@ -272,6 +349,29 @@ class UploadWallpaperController extends Controller
         }
 
         return max(0, (int) trim((string) $output[0]));
+    }
+
+    private function extractVideoFrame(string $sourceRelativePath): ?string
+    {
+        $sourceAbsolutePath = Storage::disk('public')->path($sourceRelativePath);
+        $relativeDir = trim(dirname($sourceRelativePath), '.\\/').'/thumbnails';
+        $baseName = pathinfo($sourceRelativePath, PATHINFO_FILENAME);
+        $frameRelativePath = $relativeDir.'/'.$baseName.'_frame.jpg';
+        Storage::disk('public')->makeDirectory($relativeDir);
+        $frameAbsolutePath = Storage::disk('public')->path($frameRelativePath);
+
+        $command = 'ffmpeg -y -i '.escapeshellarg($sourceAbsolutePath)
+            .' -ss 00:00:01 -vframes 1 '
+            .escapeshellarg($frameAbsolutePath).' 2>NUL';
+
+        $output = [];
+        $exitCode = 1;
+        @exec($command, $output, $exitCode);
+        if ($exitCode !== 0 || !is_file($frameAbsolutePath)) {
+            return null;
+        }
+
+        return $frameRelativePath;
     }
 
     /**

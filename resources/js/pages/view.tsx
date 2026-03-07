@@ -22,10 +22,10 @@ export default function Welcome({
     const { auth } = usePage<SharedData>().props as any;
     const { wallpaper } = usePage().props as any;
     const ownerName = String(
-        wallpaper?.owner?.name ?? 'Unknown uploader',
+        wallpaper?.owner?.name ?? 'GameScreen',
     ).trim();
     const ownerUsername = String(
-        wallpaper?.owner?.username ?? 'unknown',
+        wallpaper?.owner?.username ?? 'gamescreen',
     ).trim();
     const ownerInitial = ownerName.charAt(0).toUpperCase() || 'U';
     const [isDownloadBoxOpen, setIsDownloadBoxOpen] = useState(false);

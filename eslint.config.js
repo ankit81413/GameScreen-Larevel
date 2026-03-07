@@ -62,6 +62,18 @@ export default [
                     fixStyle: 'separate-type-imports',
                 },
             ],
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'warn',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                },
+            ],
+            'react-hooks/immutability': 'off',
+            'react-hooks/set-state-in-effect': 'off',
+            'import/order': 'warn',
         },
     },
     {

@@ -1,0 +1,552 @@
+  /* General styles */
+  body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+  }
+
+  
+
+  #vvvf {
+      /* border: 2px solid red; */
+      position: fixed;
+      top: 0px;
+      left: 0px;
+      width: 100%;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 19;
+  }
+
+  h1,h2{
+    color: #000000;
+  }
+
+  /* Sidebar styles */
+
+  /* Header styles */
+
+  /* Downloads section styles */
+  #downloads {
+      margin: 10px;
+      padding: 0px;
+      border: 2px solid #ff9900;
+      border-radius: 20px;
+  }
+
+  #downloads_h1 {
+      margin: 25px;
+      display: flex;
+      align-items: center;
+  }
+
+  #downloads_h1 i {
+      margin-right: 10px;
+      height: 50px;
+      width: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 23px;
+      color: rgb(255, 102, 0);
+      padding: 10px;
+      border-radius: 50%;
+      border: 4px solid rgb(255, 102, 0);
+  }
+
+  #downloads_h1 h1 {
+      font-size: 50px;
+      color: rgb(255, 102, 0);
+  }
+
+  main{
+    padding: 20px;
+  }
+
+  #wallpaper-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 4%);
+      border-radius: 10px;
+  }
+
+  .wallpaper-item {
+      margin: 20px;
+      text-align: center;
+  }
+
+
+
+  .wallpaper-item a {
+      display: block;
+      margin-top: 10px;
+      text-decoration: none;
+      color: #333;
+      background-color: #ff9900;
+      padding: 8px 15px;
+      border-radius: 5px;
+  }
+
+  .wallpaper-item a:hover {
+      background-color: #e58300;
+  }
+
+
+  /* Other existing styles... */
+
+  .spinner {
+      width: 25px;
+      height: 25px;
+      margin-right: 5px;
+      border-radius: 50%;
+      border: 3px solid rgba(73, 73, 73, 0.3);
+      border-top-color: #000000;
+      animation: spin 1s infinite linear;
+  }
+
+  @keyframes spin {
+      to {
+          transform: rotate(360deg);
+      }
+  }
+
+
+  #download_counter {
+      background-color: rgb(221, 221, 220);
+      padding: 15px;
+      margin: 15px;
+      border: 4px solid rgb(0, 0, 0);
+      border-radius: 12px;
+      min-width: 400px;
+      margin-top: 0;
+      width: 100%;
+  }
+
+  #counter_heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+
+
+  #counter_heading h1 {
+      font-size: 23px;
+  }
+
+
+  #spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 5px 0px;
+      margin-bottom: 10px;
+  }
+
+  #timer {
+      background-color: rgb(0, 0, 0);
+      padding: 3px 13px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+  }
+
+
+  #timer h2 {
+      font-size: 18px;
+      color: white;
+      font-weight: normal;
+  }
+
+
+
+  #download_name {
+      font-size: 18px;
+      margin-bottom: 15px;
+  }
+
+  #decrypting_text {
+      font-size: 18px;
+      font-weight: normal;
+      display: inline;
+  }
+
+
+  #download_a a {
+      color: black;
+      text-decoration: underline;
+      font-weight: bold;
+      display: none;
+  }
+
+
+
+  #progress_container {
+      background-color: blanchedalmond;
+      width: 100%;
+      padding: 2px;
+      border-radius: 10px;
+      margin: 25px 0px 0px 0px;
+  }
+
+
+  #progress {
+      background-color: rgb(255, 102, 0);
+      height: 8px;
+      border-radius: 10px;
+      width: 50%;
+  }
+
+
+  #donation_container {
+      background-color: rgb(221, 221, 221);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      border-radius: 10px;
+  }
+
+  #donation_center {
+      /* background-color: blue; */
+      display: flex;
+      max-width: 700px;
+      overflow: hidden;
+      border-radius: 10px;
+
+
+  }
+
+  #donation_center img {
+      max-width: 200px;
+      min-height: 300px;
+      object-fit: cover;
+  }
+
+  #donation_details {
+      background-color: rgb(255, 255, 255);
+      padding: 10px;
+  }
+
+  #donation_details h1 {
+      font-size: 28px;
+      margin: 11px 6px;
+  }
+
+
+  #donation_details h2 {
+      font-size: 20px;
+      color: #3b3b3b;
+      margin: 6px;
+      margin-bottom: 20px;
+  }
+
+  #donate_button {
+      color: white;
+      display: block;
+      width: calc(100% - 20px);
+      margin: 10px 6px;
+      padding: 12px;
+      font-weight: bold;
+      font-size: 18px;
+      background-color: rgb(19, 4, 22);
+      border-radius: 7px;
+      border: 2px solid rgb(24, 23, 23);
+  }
+
+  #follow_button {
+      color: white;
+      display: block;
+      width: calc(100% - 20px);
+      margin: 10px 6px;
+      padding: 12px;
+      text-align: center;
+      /* font-weight: bold; */
+      font-size: 18px;
+      background-color: rgb(19, 4, 22);
+      border-radius: 7px;
+      border: 2px solid rgb(24, 23, 23);
+  }
+
+  #follow_button i {
+      margin: 0px 4px;
+  }
+
+
+  #donation_back {
+      position: absolute;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transform: rotateY(180deg);
+  }
+
+  #cards_container {
+      display: flex;
+      justify-content: center;
+      /* align-items: center; */
+      position: relative;
+  }
+
+
+
+  #cards_container .card {
+      backface-visibility: hidden;
+      transition: 0.4s ease-in-out;
+  }
+
+
+  /* #cards_container:hover .card{
+    transform: rotateY(0deg);
+  }
+
+  #cards_container:hover #donation_center{
+    transform: rotateY(180deg);
+  } */
+
+
+
+
+  #donation_qr {
+      width: 200px;
+      height: 200px;
+      overflow: hidden;
+      border-radius: 10px;
+      border: 4px solid lightgray;
+      object-fit: contain;
+      z-index: 3;
+  }
+
+
+  #donation_qr img {
+      width: 100%;
+      height: 100%;
+      /* object-fit: contain; */
+  }
+
+  #donation_back_buttons_div {
+      background-color: rgb(23, 120, 211);
+      display: flex;
+      padding-top: 96px;
+      position: relative;
+      top: -91px;
+      border-radius: 12px;
+  }
+
+
+
+  .donation_back_buttons {
+      color: white;
+      display: block;
+      padding: 7px 10px;
+      font-size: 17px;
+      font-weight: bold;
+      background-color: rgb(19, 4, 22);
+      border-radius: 7px;
+      border: 2px solid rgb(24, 23, 23);
+      margin: 10px;
+      min-width: 120px;
+  }
+
+
+
+  @media screen and (max-width: 600px) {
+
+      #downloads {
+          margin: 6px;
+          border: 1.5px solid #ff9900;
+          border-radius: 15px;
+      }
+
+      #downloads_h1 {
+          margin: 20px;
+      }
+
+
+      #downloads_h1 i {
+          margin-right: 5px;
+          height: 30px;
+          width: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 15px;
+          color: rgb(255, 102, 0);
+          padding: 10px;
+          border-radius: 50%;
+          border: 2.5px solid rgb(255, 102, 0);
+      }
+
+
+      #downloads_h1 h1 {
+          font-size: 30px;
+      }
+
+
+
+      .spinner {
+          width: 18px;
+          height: 18px;
+          margin-right: 3px;
+          border-radius: 50%;
+          border: 2.5px solid rgba(73, 73, 73, 0.3);
+          border-top-color: #000000;
+          animation: spin 1s infinite linear;
+      }
+
+
+      #download_counter {
+          padding: 10px;
+          margin: 10px;
+          border: 2px solid rgb(0, 0, 0);
+          border-radius: 10px;
+          min-width: 250px;
+      }
+
+      #counter_heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+
+      #counter_heading h1 {
+          font-size: 18px;
+      }
+
+
+      #spinner {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 3px 0px;
+          margin-bottom: 10px;
+      }
+
+      #timer {
+          padding: 3px 7px;
+          margin-bottom: 5px;
+      }
+
+
+      #timer h2 {
+          font-size: 15px;
+      }
+
+
+
+      #download_name {
+          font-size: 16px;
+          margin-bottom: 15px;
+      }
+
+      #decrypting_text {
+          font-size: 14px;
+          font-weight: normal;
+          display: inline;
+      }
+
+
+
+
+      #donation_container {
+          padding: 10px;
+          border-radius: 10px;
+      }
+
+      #donation_center {
+          display: flex;
+          flex-direction: column;
+          max-width: 300px;
+          max-height: 500px;
+          overflow: hidden;
+          border-radius: 10px;
+
+      }
+
+      #donation_center img {
+          max-width: 100%;
+          min-height: 170px;
+          object-fit: cover;
+      }
+
+
+      #donation_back {
+          position: absolute;
+          top: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          transform: rotateY(180deg);
+      }
+
+      #cards_container {
+          display: flex;
+          justify-content: center;
+          /* align-items: center; */
+          position: relative;
+      }
+
+
+
+      #cards_container .card {
+          backface-visibility: hidden;
+          transition: 0.4s ease-in-out;
+      }
+
+
+
+
+
+
+
+      #donation_qr {
+          width: calc(100% - 25px);
+          height: 100%;
+          overflow: hidden;
+          border-radius: 10px;
+          border: 4px solid lightgray;
+          object-fit: contain;
+          z-index: 3;
+      }
+
+
+      #donation_qr img {
+          width: 100%;
+          height: 100%;
+          /* object-fit: contain; */
+      }
+
+      #donation_back_buttons_div {
+          background-color: rgb(64, 149, 199);
+          display: flex;
+          flex-direction: column;
+          padding-top: 286px;
+          padding-bottom: 4px;
+          position: relative;
+          top: -279px;
+          border-radius: 12px;
+      }
+
+
+
+      .donation_back_buttons {
+          color: white;
+          display: block;
+          padding: 17px 10px;
+          font-size: 23px;
+          font-weight: bold;
+          background-color: rgb(19, 4, 22);
+          border-radius: 7px;
+          border: 2px solid rgb(24, 23, 23);
+          margin: 6px 10px;
+          min-width: 260px;
+      }
+
+
+
+  }

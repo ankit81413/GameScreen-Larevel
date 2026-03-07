@@ -6,6 +6,7 @@
 
 .loader-container {
   position: absolute;
+  inset: 0;
   background-color: #0000007e;
   display: flex;
   display: none;
@@ -49,6 +50,8 @@ header {
   color: #ffffff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   padding: 10px 30px;
+  position: relative;
+  z-index: 20;
 }
 
 /* Logo styles */
@@ -82,12 +85,25 @@ header {
 
 .searchbox {
   width: 400px;
+  max-width: 40vw;
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: rgba(255, 255, 255, 0.538);
   padding: 6px 15px;
   border-radius: 20px;
+  transition: width .28s ease, max-width .28s ease, background-color .28s ease, box-shadow .28s ease;
+  position: relative;
+  z-index: 25;
+}
+
+.searchbox.searchbox-focused {
+  width: 640px;
+  max-width: min(72vw, 760px);
+  background-color: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .searchbox i {
@@ -98,6 +114,13 @@ header {
   margin: 0px 10px 2px;
   width: 100%;
   color: #000000;
+  background: transparent;
+  border: 0;
+}
+
+.searchbox input::selection {
+  background-color: #ff9900;
+  color: #111;
 }
 
 .searchbox input:focus {
@@ -115,7 +138,7 @@ header {
     "ROND" 0;
   font-optical-sizing: auto;
   word-spacing: -6px;
-  color: rgb(0, 0, 0);
+  color: rgb(95, 95, 95);
   font-weight: 700;
 }
 
@@ -123,6 +146,13 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  transition: background-color .2s ease;
 }
 
 .search_with_code::after {
@@ -132,6 +162,199 @@ header {
   height: 6px;
   position: absolute;
   border-radius: 2px;
+}
+
+.search_with_code:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.search_focus_backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 10, 18, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 15;
+}
+
+.search_focus_backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.search_history_container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 0 0 16px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: 0;
+  overflow: hidden;
+  max-height: min(72vh, 620px);
+  overflow-y: auto;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
+}
+
+.search_history_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px 8px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.search_block {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.search_block:first-child {
+  border-top: 0;
+}
+
+.code_search_block {
+  padding-bottom: 10px;
+}
+
+.code_digit_form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+}
+
+.code_digit_inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.code_digit_input {
+  width: 38px !important;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid #cfd4dc !important;
+  background: #ffffff !important;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.code_digit_input:focus {
+  border-color: #ff9900 !important;
+  box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.22);
+}
+
+.code_go_button {
+  border: 0;
+  border-radius: 8px;
+  background: #111017;
+  color: #fff;
+  font-weight: 600;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.search_history_list {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.search_history_list li button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #222;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search_history_list li button i {
+  color: #6b7280;
+}
+
+.search_history_list li button:hover {
+  background: #f4f4f4;
+}
+
+.search_result_list {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.search_result_list li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #1f2937;
+}
+
+.search_result_list li a:hover {
+  background: #f4f4f4;
+}
+
+.search_result_list .thumb {
+  width: 64px;
+  height: 42px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #d1d5db;
+  flex: 0 0 64px;
+}
+
+.search_result_list .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search_result_list .meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.search_result_list .title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search_result_list .sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.search_history_empty {
+  padding: 10px 14px 14px;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 .right_container {
@@ -154,6 +377,10 @@ header {
   justify-content: center;
   align-items: center;
   gap: 5px;
+}
+
+.AccountButton{
+  padding: 7px 16px;
 }
 
 .LoginButton:hover {
@@ -190,6 +417,13 @@ header {
   cursor: pointer;
   position: relative;
   display: inline-block;
+}
+
+button.SignupButton {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
 }
 
 .SignupButton::after {
@@ -351,6 +585,7 @@ header {
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
+  width: unset;
 }
 
 /* Style when hovering over the left and right divs */
@@ -499,7 +734,17 @@ footer {
   position: absolute;
   right: 5px;
   z-index: 3;
+  top: 0;
   /* background-color: red; */
+}
+
+.wallpaper-play-button {
+  cursor: pointer;
+}
+
+.wallpaper-card-loader {
+  display: flex;
+  z-index: 4;
 }
 
 .portrait .image img {
@@ -977,6 +1222,16 @@ input:checked+.slider:before {
     padding-left: 7px;
   }
 
+  .wallpaper-play-button i {
+    height: 34px;
+    width: 34px;
+    border: 2px solid #ff9900;
+    margin: 8px;
+    font-size: 16px;
+    padding: 5px;
+    padding-left: 8px;
+  }
+
 
   .portrait .image img {
     width: 100%;
@@ -1325,6 +1580,19 @@ input:checked+.slider:before {
     border-radius: 20px;
     width: 100%;
 
+  }
+
+  .searchbox {
+    max-width: 100%;
+  }
+
+  .searchbox.searchbox-focused {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .search_history_container {
+    max-height: 55vh;
   }
 
 

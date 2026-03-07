@@ -1,0 +1,142 @@
+.gaming_alert_stack {
+  position: fixed;
+  right: 18px;
+  top: 92px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.gaming_alert {
+  pointer-events: auto;
+  position: relative;
+  width: min(420px, 94vw);
+  min-height: 84px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 13px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: linear-gradient(145deg, #101a30, #090e1a);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: gamingAlertIn .25s ease-out;
+}
+
+.gaming_alert::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.gaming_alert i {
+  font-size: 19px;
+  margin-top: 1px;
+}
+
+.gaming_alert_content h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+}
+
+.gaming_alert_content p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #d6dde8;
+}
+
+.gaming_alert_glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.gaming_alert_success {
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.45);
+}
+
+.gaming_alert_success i {
+  color: #5eead4;
+}
+
+.gaming_alert_success .gaming_alert_glow {
+  background: radial-gradient(circle at 0% 30%, #14b8a6 0, transparent 55%);
+}
+
+.gaming_alert_error {
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.45);
+}
+
+.gaming_alert_error i {
+  color: #fb7185;
+}
+
+.gaming_alert_error .gaming_alert_glow {
+  background: radial-gradient(circle at 0% 30%, #be123c 0, transparent 55%);
+}
+
+.gaming_alert_warning {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.gaming_alert_warning i {
+  color: #fbbf24;
+}
+
+.gaming_alert_warning .gaming_alert_glow {
+  background: radial-gradient(circle at 0% 30%, #d97706 0, transparent 55%);
+}
+
+.gaming_alert_close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.gaming_alert_close:hover {
+  color: #e5e7eb;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes gamingAlertIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .gaming_alert_stack {
+    left: 10px;
+    right: 10px;
+    top: 74px;
+  }
+
+  .gaming_alert {
+    width: 100%;
+  }
+}

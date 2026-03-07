@@ -1,6 +1,6 @@
 export function useFullScreen() {
     const toggleFullScreen = (id: string) => {
-        let el = document.getElementById(id) as any;
+        const el = document.getElementById(id) as any;
         if (!el) {
             return;
         }

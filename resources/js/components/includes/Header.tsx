@@ -1,8 +1,8 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import React, { useEffect, useRef, useState } from 'react';
+import { showGamingAlert } from '@/lib/gaming-alerts';
 import { home, login, logout, register, viewWallpaper } from '@/routes';
 import type { SharedData } from '@/types';
-import { showGamingAlert } from '@/lib/gaming-alerts';
 
 export default function Header() {
     const { auth } = usePage<SharedData>().props as any;

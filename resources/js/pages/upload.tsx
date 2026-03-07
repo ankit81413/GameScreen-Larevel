@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AccountDashboardLayout from '@/layouts/account-dashboard-layout';
 import { showGamingAlert } from '@/lib/gaming-alerts';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 export default function UploadPage() {
     const form = useForm({

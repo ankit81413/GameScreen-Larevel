@@ -2,9 +2,9 @@ import { Head } from '@inertiajs/react';
 import { usePage } from '@inertiajs/react';
 import '../../css/style.css';
 import '../../css/download.css';
-import Header from '@/components/includes/Header';
-import Footer from '@/components/includes/Footer';
 import { useEffect, useRef, useState } from 'react';
+import Footer from '@/components/includes/Footer';
+import Header from '@/components/includes/Header';
 
 export default function Download() {
     const [showDonationBack, setShowDonationBack] = useState(false);

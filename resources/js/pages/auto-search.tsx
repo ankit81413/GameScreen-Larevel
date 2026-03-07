@@ -1,10 +1,10 @@
 import { Head, usePage } from '@inertiajs/react';
 import '../../css/style.css';
 import '../../css/new_style.css';
-import Header from '@/components/includes/Header';
-import WallpaperCard from '@/components/common/WallpaperCard';
 import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
+import WallpaperCard from '@/components/common/WallpaperCard';
 import Footer from '@/components/includes/Footer';
+import Header from '@/components/includes/Header';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 
 export default function AutoSearchPage() {

@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import React, { useMemo, useState } from 'react';
-import AuthLayout from '@/layouts/auth-layout';
 import { Button } from '@/components/ui/button';
+import AuthLayout from '@/layouts/auth-layout';
 import { showGamingAlert } from '@/lib/gaming-alerts';
 
 type InterestTag = {

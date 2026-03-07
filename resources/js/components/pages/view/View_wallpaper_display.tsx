@@ -149,7 +149,7 @@ export default function ViewWallpaperDisplay(props: any) {
     };
 
     const handleFullscreenimg = () => {
-        let el = document.getElementById('display_content_img') as any;
+        const el = document.getElementById('display_content_img') as any;
         if(!document.fullscreenElement){
             el.querySelector('img').style.maxHeight = "unset"
         }else{

@@ -3,12 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Wallpaper extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'wallpapers';
 
     protected $fillable = [
+        'owner_id',
+        'is_private',
         'code',
         'name',
         'thumbnail',
@@ -16,6 +21,11 @@ class Wallpaper extends Model
         'type',
         'orientation',
     ];
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 
     public function links()
     {

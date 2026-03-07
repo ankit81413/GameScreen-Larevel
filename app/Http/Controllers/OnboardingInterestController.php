@@ -12,21 +12,27 @@ class OnboardingInterestController extends Controller
     public function show(Request $request)
     {
         $allTags = Tag::query()->get(['id', 'name']);
-        $roundSize = min(12, max(3, $allTags->count()));
+        $roundCount = 3;
+        $minimumRoundSize = 3;
+        $maxDisjointPerRound = intdiv(max($allTags->count(), 0), $roundCount);
+        $roundSize = min(12, max($minimumRoundSize, $maxDisjointPerRound));
 
-        $rounds = collect(range(1, 3))
-            ->map(function () use ($allTags, $roundSize) {
-                return $allTags
-                    ->shuffle()
-                    ->take($roundSize)
-                    ->values()
-                    ->map(fn ($tag) => [
-                        'id' => $tag->id,
-                        'name' => $tag->name,
-                        'thumbnail' => $tag->wallpapers()
-                            ->inRandomOrder()
-                            ->value('thumbnail'),
-                    ]);
+        $shuffled = $allTags->shuffle()->values();
+        $canBuildDisjointRounds = $allTags->count() >= ($roundSize * $roundCount);
+
+        $rounds = collect(range(0, $roundCount - 1))
+            ->map(function ($roundIndex) use ($allTags, $shuffled, $roundSize, $canBuildDisjointRounds) {
+                $source = $canBuildDisjointRounds
+                    ? $shuffled->slice($roundIndex * $roundSize, $roundSize)->values()
+                    : $allTags->shuffle()->take($roundSize)->values();
+
+                return $source->map(fn ($tag) => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'thumbnail' => $tag->wallpapers()
+                        ->inRandomOrder()
+                        ->value('thumbnail'),
+                ]);
             })
             ->values();
 
@@ -44,7 +50,10 @@ class OnboardingInterestController extends Controller
         ]);
 
         $flatTagIds = collect($validated['rounds'])->flatten();
-        if ($flatTagIds->unique()->count() !== 9) {
+        $totalTags = Tag::query()->count();
+        $requiredUniqueCount = min(9, $totalTags);
+
+        if ($requiredUniqueCount > 0 && $flatTagIds->unique()->count() < $requiredUniqueCount) {
             return response()->json([
                 'message' => 'Please select unique tags across all rounds.',
             ], 422);
@@ -95,5 +104,17 @@ class OnboardingInterestController extends Controller
             ->values();
 
         return response()->json($items);
+    }
+
+    public function destroy(Request $request, UserInterest $interest)
+    {
+        $user = $request->user();
+        if ((int) $interest->user_id !== (int) $user->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        $interest->delete();
+
+        return response()->json(['ok' => true]);
     }
 }

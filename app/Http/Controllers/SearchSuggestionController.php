@@ -21,6 +21,7 @@ class SearchSuggestionController extends Controller
 
         $wallpapers = Wallpaper::query()
             ->with('links')
+            ->where('is_private', false)
             ->where(function ($builder) use ($terms) {
                 foreach ($terms as $term) {
                     $builder->orWhereRaw('LOWER(name) LIKE ?', ["%{$term}%"])

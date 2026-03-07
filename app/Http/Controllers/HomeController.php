@@ -11,7 +11,9 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $wallpapers = Wallpaper::with(['links', 'tags'])->paginate(10);
+        $wallpapers = Wallpaper::with(['links', 'tags'])
+            ->where('is_private', false)
+            ->paginate(10);
         $wallpapers->withPath(route('wallpapers.paginate'));
         
 
@@ -23,7 +25,9 @@ class HomeController extends Controller
 
     public function Loadmore()
     {
-        $wallpapers = Wallpaper::with(['links', 'tags'])->paginate(10);
+        $wallpapers = Wallpaper::with(['links', 'tags'])
+            ->where('is_private', false)
+            ->paginate(10);
         $wallpapers->withPath(route('wallpapers.paginate'));
 
         return response()->json($wallpapers);

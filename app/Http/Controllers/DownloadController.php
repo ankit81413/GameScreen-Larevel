@@ -10,7 +10,15 @@ class DownloadController extends Controller
 {
     public function download(Request $request, string $code)
     {
-        $wallpaper = Wallpaper::where('code', $code)->with('links')->firstOrFail();
+        $wallpaper = Wallpaper::where('code', $code)
+            ->where(function ($query) use ($request) {
+                $query->where('is_private', false);
+                if ($request->user()) {
+                    $query->orWhere('owner_id', $request->user()->id);
+                }
+            })
+            ->with('links')
+            ->firstOrFail();
 
         $links = collect($wallpaper->links)
             ->map(function ($link) {

@@ -28,6 +28,7 @@ class SimilarWallpaperController extends Controller
 
         $wallpapersByCode = Wallpaper::with(['links', 'tags'])
             ->whereIn('code', $codes->all())
+            ->where('is_private', false)
             ->get()
             ->keyBy('code');
 

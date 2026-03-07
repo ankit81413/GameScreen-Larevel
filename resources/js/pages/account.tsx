@@ -1,8 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import AccountDashboardLayout from '@/layouts/account-dashboard-layout';
 import type { SharedData } from '@/types';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { showGamingAlert } from '@/lib/gaming-alerts';
+import WallpaperCard from '@/components/common/WallpaperCard';
 
 type SavedWallpaperItem = {
     id: number;
@@ -12,52 +13,54 @@ type SavedWallpaperItem = {
         name: string;
         thumbnail: string;
         type?: number;
+        orientation?: 'land' | 'port';
+        links?: Array<{ quality?: string | number; url?: string }>;
     } | null;
 };
 
-type InterestItem = {
+type OwnedWallpaperItem = {
     id: number;
+    code: string;
     name: string;
-    thumbnail?: string | null;
+    thumbnail: string;
+    type?: number;
+    is_private?: boolean;
+    orientation?: 'land' | 'port';
+    links?: Array<{ quality?: string | number; url?: string }>;
 };
+
+type AccountTab = 'profile' | 'saved';
 
 export default function Account() {
     const { auth } = usePage<SharedData>().props as any;
     const user = auth?.user;
+    const [activeTab, setActiveTab] = useState<AccountTab>('profile');
+    const [ownedWallpapers, setOwnedWallpapers] = useState<OwnedWallpaperItem[]>([]);
     const [savedWallpapers, setSavedWallpapers] = useState<SavedWallpaperItem[]>([]);
-    const [interests, setInterests] = useState<InterestItem[]>([]);
-    const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadAccountData = async () => {
             setIsLoading(true);
             try {
-                const [savedResponse, interestsResponse, searchesResponse] =
-                    await Promise.all([
+                const [ownedResponse, savedResponse] = await Promise.all([
+                        fetch('/my-wallpapers', {
+                            headers: { Accept: 'application/json' },
+                            credentials: 'same-origin',
+                        }),
                         fetch('/saved-wallpapers', {
-                            headers: { Accept: 'application/json' },
-                            credentials: 'same-origin',
-                        }),
-                        fetch('/onboarding/my-interests', {
-                            headers: { Accept: 'application/json' },
-                            credentials: 'same-origin',
-                        }),
-                        fetch('/search-history', {
                             headers: { Accept: 'application/json' },
                             credentials: 'same-origin',
                         }),
                     ]);
 
+                const ownedJson = ownedResponse.ok ? await ownedResponse.json() : [];
                 const savedJson = savedResponse.ok ? await savedResponse.json() : { data: [] };
-                const interestsJson = interestsResponse.ok ? await interestsResponse.json() : [];
-                const searchesJson = searchesResponse.ok ? await searchesResponse.json() : [];
 
+                setOwnedWallpapers(Array.isArray(ownedJson) ? ownedJson : []);
                 setSavedWallpapers(
                     Array.isArray(savedJson?.data) ? savedJson.data : [],
                 );
-                setInterests(Array.isArray(interestsJson) ? interestsJson : []);
-                setRecentSearches(Array.isArray(searchesJson) ? searchesJson : []);
             } catch (error) {
                 showGamingAlert({
                     type: 'error',
@@ -72,19 +75,88 @@ export default function Account() {
         loadAccountData();
     }, []);
 
-    const profileCompletion = useMemo(() => {
-        const checks = [
-            Boolean(user?.name),
-            Boolean(user?.username),
-            Boolean(user?.email),
-            Boolean(user?.birthdate),
-            Boolean(user?.gender),
-            Boolean(user?.bio),
-            interests.length > 0,
-        ];
-        const score = checks.filter(Boolean).length;
-        return Math.round((score / checks.length) * 100);
-    }, [user, interests.length]);
+    const getCsrfToken = () =>
+        (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? ''
+        ).trim();
+
+    const togglePrivacy = async (wallpaperId: number, nextPrivate: boolean) => {
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`/account/wallpapers/${wallpaperId}/privacy`, {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({ is_private: nextPrivate, _token: csrfToken }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Privacy update failed');
+            }
+
+            setOwnedWallpapers((current) =>
+                current.map((item) =>
+                    item.id === wallpaperId
+                        ? { ...item, is_private: nextPrivate }
+                        : item,
+                ),
+            );
+            showGamingAlert({
+                type: 'success',
+                title: 'Privacy Updated',
+                message: nextPrivate
+                    ? 'Wallpaper is now private.'
+                    : 'Wallpaper is now public.',
+            });
+        } catch (error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Action Failed',
+                message: 'Could not update privacy.',
+            });
+        }
+    };
+
+    const deleteOwnedWallpaper = async (wallpaperId: number) => {
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`/account/wallpapers/${wallpaperId}`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Delete failed');
+            }
+
+            setOwnedWallpapers((current) =>
+                current.filter((item) => item.id !== wallpaperId),
+            );
+            showGamingAlert({
+                type: 'warning',
+                title: 'Wallpaper Deleted',
+                message: 'Wallpaper moved out of your profile list.',
+            });
+        } catch (error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Delete Failed',
+                message: 'Could not delete wallpaper.',
+            });
+        }
+    };
 
     return (
         <>
@@ -104,8 +176,8 @@ export default function Account() {
                                 <p>@{user?.username ?? 'username'}</p>
                             </div>
                         </div>
-                        <Link href="/settings/profile" className="primary_cta">
-                            <i className="fa-regular fa-pen-to-square"></i> Edit profile
+                        <Link href="/upload" className="primary_cta">
+                            <i className="fa-solid fa-upload"></i> Upload
                         </Link>
                     </div>
 
@@ -123,54 +195,93 @@ export default function Account() {
 
                     <div className="account_stats">
                         <div className="stat_card">
+                            <h3>Profile Wallpapers</h3>
+                            <p>{ownedWallpapers.length}</p>
+                        </div>
+                        <div className="stat_card">
                             <h3>Saved</h3>
                             <p>{savedWallpapers.length}</p>
                         </div>
                         <div className="stat_card">
-                            <h3>Interests</h3>
-                            <p>{interests.length}</p>
-                        </div>
-                        <div className="stat_card">
-                            <h3>Searches</h3>
-                            <p>{recentSearches.length}</p>
-                        </div>
-                        <div className="stat_card">
-                            <h3>Profile</h3>
-                            <p>{profileCompletion}%</p>
+                            <h3>Total</h3>
+                            <p>{ownedWallpapers.length + savedWallpapers.length}</p>
                         </div>
                     </div>
 
                     <div className="account_tabs">
-                        <span className="active">Gallery ({savedWallpapers.length})</span>
-                        <span>Interests ({interests.length})</span>
-                        <span>Searches ({recentSearches.length})</span>
+                        <button
+                            type="button"
+                            className={activeTab === 'profile' ? 'active' : ''}
+                            onClick={() => setActiveTab('profile')}
+                        >
+                            Profile ({ownedWallpapers.length})
+                        </button>
+                        <button
+                            type="button"
+                            className={activeTab === 'saved' ? 'active' : ''}
+                            onClick={() => setActiveTab('saved')}
+                        >
+                            Saved ({savedWallpapers.length})
+                        </button>
                     </div>
 
                     <div className="panel panel_full">
                         {isLoading ? (
                             <p className="muted">Loading...</p>
-                        ) : savedWallpapers.length ? (
-                            <div className="saved_wall_grid">
+                        ) : activeTab === 'profile' && ownedWallpapers.length ? (
+                            <div className="wallpaper-container">
+                                {ownedWallpapers.map((item) => (
+                                    <div key={item.id} className="owned_wallpaper_item">
+                                        <WallpaperCard item={item} />
+                                        <div className="owned_wallpaper_actions">
+                                            <span
+                                                className={`owned_privacy_badge ${item.is_private ? 'private' : 'public'}`}
+                                            >
+                                                {item.is_private ? 'Private' : 'Public'}
+                                            </span>
+                                            <Link
+                                                href={`/account/wallpapers/${item.id}/edit`}
+                                                className="owned_action_btn"
+                                            >
+                                                Edit
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                className="owned_action_btn"
+                                                onClick={() =>
+                                                    togglePrivacy(item.id, !Boolean(item.is_private))
+                                                }
+                                            >
+                                                {item.is_private ? 'Make Public' : 'Make Private'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="owned_action_btn danger"
+                                                onClick={() => deleteOwnedWallpaper(item.id)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : activeTab === 'saved' && savedWallpapers.length ? (
+                            <div className="wallpaper-container">
                                 {savedWallpapers.map((item) =>
                                     item.wallpaper ? (
-                                        <Link
-                                            key={item.id}
-                                            href={`/view/${item.wallpaper.code}`}
-                                            className="saved_wall_card"
-                                        >
-                                            <img
-                                                src={item.wallpaper.thumbnail}
-                                                alt={item.wallpaper.name}
-                                            />
-                                            <span>{item.wallpaper.name}</span>
-                                        </Link>
+                                        <WallpaperCard key={item.id} item={item.wallpaper} />
                                     ) : null,
                                 )}
                             </div>
                         ) : (
                             <div className="empty_block">
                                 <h2>No content yet</h2>
-                                <p>Save wallpapers to see your gallery here.</p>
+                                <p>
+                                    {activeTab === 'profile' &&
+                                        'Upload wallpapers to build your profile.'}
+                                    {activeTab === 'saved' &&
+                                        'Save wallpapers to see them here.'}
+                                </p>
                             </div>
                         )}
                     </div>

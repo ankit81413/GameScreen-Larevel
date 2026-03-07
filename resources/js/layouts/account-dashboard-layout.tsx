@@ -6,7 +6,7 @@ import '../../css/style.css';
 import '../../css/new_style.css';
 import '../../css/account.css';
 
-type AccountSection = 'overview' | 'edit-profile' | 'change-password' | 'delete-account';
+type AccountSection = 'overview' | 'upload' | 'edit-wallpaper' | 'edit-profile' | 'change-password' | 'delete-account';
 
 export default function AccountDashboardLayout({
     section,
@@ -28,6 +28,12 @@ export default function AccountDashboardLayout({
                                 className={section === 'overview' ? 'active' : ''}
                             >
                                 Overview
+                            </Link>
+                            <Link
+                                href="/upload"
+                                className={section === 'upload' ? 'active' : ''}
+                            >
+                                Upload Wallpaper
                             </Link>
                             <Link
                                 href="/account/edit-profile"

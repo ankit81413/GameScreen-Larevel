@@ -21,9 +21,30 @@ export default function Welcome({
 }) {
     const { auth } = usePage<SharedData>().props as any;
     const { wallpaper } = usePage().props as any;
+    const ownerName = String(
+        wallpaper?.owner?.name ?? 'Unknown uploader',
+    ).trim();
+    const ownerUsername = String(
+        wallpaper?.owner?.username ?? 'unknown',
+    ).trim();
+    const ownerInitial = ownerName.charAt(0).toUpperCase() || 'U';
     const [isDownloadBoxOpen, setIsDownloadBoxOpen] = useState(false);
-    const [isSaved, setIsSaved] = useState<boolean>(Boolean(wallpaper?.is_saved));
+    const [isSaved, setIsSaved] = useState<boolean>(
+        Boolean(wallpaper?.is_saved),
+    );
     const [isSaveLoading, setIsSaveLoading] = useState(false);
+    const [isLiked, setIsLiked] = useState<boolean>(
+        Boolean(wallpaper?.is_liked),
+    );
+    const [likeCount, setLikeCount] = useState<number>(
+        Number(wallpaper?.likes_count ?? 0),
+    );
+    const [comments, setComments] = useState<any[]>(
+        Array.isArray(wallpaper?.comments) ? wallpaper.comments : [],
+    );
+    const [isCommentsExpanded, setIsCommentsExpanded] = useState(false);
+    const [commentInput, setCommentInput] = useState('');
+    const [isCommentLoading, setIsCommentLoading] = useState(false);
     const {
         items: similarWallpapers,
         isLoading: isSimilarWallpapersLoading,
@@ -36,7 +57,9 @@ export default function Welcome({
         },
     });
     const normalizeQuality = (quality: unknown) => {
-        const raw = String(quality ?? '').trim().toLowerCase();
+        const raw = String(quality ?? '')
+            .trim()
+            .toLowerCase();
         const compact = raw.replace(/\s+/g, '');
 
         if (compact === '2k') return { value: 1440, label: '2k' };
@@ -62,7 +85,9 @@ export default function Welcome({
         return { value: NaN, label: '' };
     };
 
-    const downloadLinks = (Array.isArray(wallpaper?.links) ? wallpaper.links : [])
+    const downloadLinks = (
+        Array.isArray(wallpaper?.links) ? wallpaper.links : []
+    )
         .map((link: any) => {
             const normalized = normalizeQuality(link?.quality);
 
@@ -137,6 +162,19 @@ export default function Welcome({
     useEffect(() => {
         setIsSaved(Boolean(wallpaper?.is_saved));
     }, [wallpaper?.id, wallpaper?.is_saved]);
+
+    useEffect(() => {
+        setIsLiked(Boolean(wallpaper?.is_liked));
+        setLikeCount(Number(wallpaper?.likes_count ?? 0));
+        setComments(
+            Array.isArray(wallpaper?.comments) ? wallpaper.comments : [],
+        );
+    }, [
+        wallpaper?.id,
+        wallpaper?.is_liked,
+        wallpaper?.likes_count,
+        wallpaper?.comments,
+    ]);
 
     const getCsrfToken = () =>
         (
@@ -215,6 +253,138 @@ export default function Welcome({
         }
     };
 
+    const handleToggleLike = async () => {
+        if (!auth?.user) {
+            showGamingAlert({
+                type: 'warning',
+                title: 'Login Needed',
+                message: 'Please login to like this wallpaper.',
+            });
+            router.visit(login().url);
+            return;
+        }
+
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`/wallpapers/${wallpaper.id}/like`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({ _token: csrfToken }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Like toggle failed');
+            }
+
+            const data = await response.json();
+            setIsLiked(Boolean(data?.liked));
+            setLikeCount(Number(data?.likes_count ?? 0));
+        } catch (error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Like Failed',
+                message: 'Could not update like right now.',
+            });
+        }
+    };
+
+    const handleCommentSubmit = async (
+        event: React.FormEvent<HTMLFormElement>,
+    ) => {
+        event.preventDefault();
+        const text = commentInput.trim();
+        if (!text) {
+            return;
+        }
+
+        if (!auth?.user) {
+            showGamingAlert({
+                type: 'warning',
+                title: 'Login Needed',
+                message: 'Please login to comment.',
+            });
+            router.visit(login().url);
+            return;
+        }
+
+        if (isCommentLoading) {
+            return;
+        }
+
+        setIsCommentLoading(true);
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(
+                `/wallpapers/${wallpaper.id}/comments`,
+                {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    },
+                    body: JSON.stringify({ comment: text, _token: csrfToken }),
+                },
+            );
+
+            if (!response.ok) {
+                throw new Error('Comment failed');
+            }
+
+            const data = await response.json();
+            const newComment = data?.comment;
+            if (newComment) {
+                setComments((current) => [newComment, ...current]);
+            }
+            setCommentInput('');
+        } catch (error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Comment Failed',
+                message: 'Could not post your comment.',
+            });
+        } finally {
+            setIsCommentLoading(false);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: number) => {
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`/wallpaper-comments/${commentId}`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Delete failed');
+            }
+
+            setComments((current) =>
+                current.filter((item) => item.id !== commentId),
+            );
+        } catch (error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Delete Failed',
+                message: 'Could not remove comment.',
+            });
+        }
+    };
+
     return (
         <>
             <Head title="View">
@@ -233,20 +403,33 @@ export default function Welcome({
 
             <section className="main">
                 <div id="left">
-                    <ViewWallpaperDisplay links={wallpaper.links} thumbnail={wallpaper.thumbnail} type={wallpaper.type}/>
+                    <ViewWallpaperDisplay
+                        links={wallpaper.links}
+                        thumbnail={wallpaper.thumbnail}
+                        type={wallpaper.type}
+                    />
                     <div className="menu">
                         <div className="name">
                             <h2 id="name-text">{wallpaper.name}</h2>
                         </div>
                         <div className="buttons">
-                            <div className="share" onClick={handleShareWallpaper}>
+                            <div
+                                className="share"
+                                onClick={handleShareWallpaper}
+                            >
                                 <i className="fa-solid fa-arrow-up-from-bracket"></i>
                             </div>
                             <div
                                 className={`save ${isSaved ? 'saved' : ''} ${isSaveLoading ? 'saving' : ''}`}
                                 onClick={handleSaveWallpaper}
                             >
-                                <i className={isSaved ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}></i>
+                                <i
+                                    className={
+                                        isSaved
+                                            ? 'fa-solid fa-bookmark'
+                                            : 'fa-regular fa-bookmark'
+                                    }
+                                ></i>
                             </div>
                             <div className="download">
                                 <i
@@ -256,21 +439,141 @@ export default function Welcome({
                             </div>
                         </div>
                     </div>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <div className="owner_strip">
+                            <div className="owner_dp">{ownerInitial}</div>
+                            <div className="owner_meta">
+                                <h3>{ownerName}</h3>
+                                <p>
+                                    @{ownerUsername}
+                                    <i className="fa-solid fa-circle-check"></i>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="engagement_strip">
+                            <button
+                                type="button"
+                                className={`engagement_btn ${isLiked ? 'active' : ''}`}
+                                onClick={handleToggleLike}
+                            >
+                                <i
+                                    className={`${isLiked ? 'fa-solid' : 'fa-regular'} fa-heart`}
+                                ></i>
+                                <span>{likeCount}</span>
+                            </button>
+                            <div className="engagement_btn static">
+                                <i className="fa-regular fa-comment"></i>
+                                <span>{comments.length}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="comments_panel">
+                        <h3>Comments</h3>
+                        <form
+                            onSubmit={handleCommentSubmit}
+                            className="comment_form"
+                        >
+                            <input
+                                type="text"
+                                value={commentInput}
+                                onChange={(event) =>
+                                    setCommentInput(event.target.value)
+                                }
+                                placeholder="Write a comment..."
+                                maxLength={500}
+                            />
+                            <button type="submit" disabled={isCommentLoading}>
+                                {isCommentLoading ? 'Posting...' : 'Post'}
+                            </button>
+                        </form>
+                        {comments.length ? (
+                            <>
+                                <div
+                                    className={`comment_list_wrapper ${isCommentsExpanded ? 'expanded' : ''}`}
+                                >
+                                    <div className="comment_list">
+                                        {comments.map((comment: any) => (
+                                            <div
+                                                key={comment.id}
+                                                className="comment_item"
+                                            >
+                                                <div className="comment_dp">
+                                                    {String(
+                                                        comment?.user?.name ??
+                                                            'U',
+                                                    )
+                                                        .trim()
+                                                        .charAt(0)
+                                                        .toUpperCase() || 'U'}
+                                                </div>
+                                                <div className="comment_body">
+                                                    <h4>
+                                                        {comment?.user?.name ??
+                                                            'User'}
+                                                        <span>
+                                                            @
+                                                            {comment?.user
+                                                                ?.username ??
+                                                                'user'}
+                                                        </span>
+                                                    </h4>
+                                                    <p>{comment?.comment}</p>
+                                                </div>
+                                                {comment?.can_delete && (
+                                                    <button
+                                                        type="button"
+                                                        className="comment_delete"
+                                                        onClick={() =>
+                                                            handleDeleteComment(
+                                                                comment.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="comment_expand_btn"
+                                    onClick={() =>
+                                        setIsCommentsExpanded(
+                                            (current) => !current,
+                                        )
+                                    }
+                                >
+                                    {isCommentsExpanded ? 'Collapse' : 'Expand'}
+                                </button>
+                            </>
+                        ) : (
+                            <p className="comment_empty">No comments yet.</p>
+                        )}
+                    </div>
                     <div className="similar">
                         <div id="similar_tags">
                             {wallpaper.tags.map((tag: any) => (
-                                <View_tag key={tag.id} name={tag.name}/>
+                                <View_tag key={tag.id} name={tag.name} />
                             ))}
-
                         </div>
                         <div id="similar_wallpapers">
                             <section id="wallpaper-container">
-                                {similarWallpapers.map((item: any, index: number) => (
-                                    <WallpaperCard
-                                        key={`${item.id}-${index}`}
-                                        item={item}
-                                    />
-                                ))}
+                                {similarWallpapers.map(
+                                    (item: any, index: number) => (
+                                        <WallpaperCard
+                                            key={`${item.id}-${index}`}
+                                            item={item}
+                                        />
+                                    ),
+                                )}
                             </section>
                             <LoadMoreWallpapersButton
                                 onClick={loadMoreSimilarWallpapers}
@@ -291,7 +594,8 @@ export default function Welcome({
                 >
                     <div id="download_box">
                         <h1>
-                            <i className="fa-regular fa-circle-down"></i>Download
+                            <i className="fa-regular fa-circle-down"></i>
+                            Download
                         </h1>
                         <ul id="download_option_list">
                             {downloadLinks.length ? (

@@ -176,14 +176,17 @@
   margin-bottom: 20px;
 }
 
-.account_tabs span {
+.account_tabs button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
   color: #5f5f5f;
   padding: 10px 18px;
   border-radius: 999px;
   font-size: 20px;
 }
 
-.account_tabs span.active {
+.account_tabs button.active {
   background: #111;
   color: #fff;
 }
@@ -236,6 +239,93 @@
   padding: 8px 10px;
 }
 
+.tag_input_wrapper {
+  position: relative;
+}
+
+.tag_capsule_input {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid #cbcbcb;
+  background: #fff;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag_capsule_input input {
+  border: 0 !important;
+  background: transparent !important;
+  min-height: 28px;
+  flex: 1;
+  min-width: 120px;
+  padding: 0 6px !important;
+}
+
+.tag_capsule_input input:focus {
+  outline: none;
+}
+
+.tag_capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #111827;
+  color: #f8fafc;
+  border-radius: 999px;
+  padding: 6px 9px 6px 10px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.tag_capsule button {
+  border: 0;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.tag_capsule button i {
+  font-size: 10px;
+}
+
+.tag_suggestion_box {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 25;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tag_suggestion_box button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 9px 11px;
+  color: #111827;
+  cursor: pointer;
+}
+
+.tag_suggestion_box button:hover {
+  background: #f3f4f6;
+}
+
 .form_grid textarea {
   min-height: 90px;
 }
@@ -260,12 +350,16 @@
 
 .saved_wall_grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 340px));
+  justify-content: start;
+  gap: 14px;
 }
+
 
 .saved_wall_card {
   display: block;
+  width: 100%;
+  max-width: 340px;
   background: #fff;
   border-radius: 14px;
   overflow: hidden;
@@ -274,7 +368,7 @@
 
 .saved_wall_card img {
   width: 100%;
-  height: 120px;
+  height: 180px;
   object-fit: cover;
 }
 
@@ -286,6 +380,119 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.interest_list,
+.search_list {
+  display: grid;
+  gap: 10px;
+}
+
+.interest_row,
+.search_row {
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.interest_row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.interest_meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.interest_meta img,
+.interest_fallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: 0 0 36px;
+}
+
+.interest_fallback {
+  background: #111827;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.interest_meta span {
+  color: #161616;
+  font-weight: 600;
+}
+
+.interest_row button {
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search_row span {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.owned_wallpaper_item {
+  display: grid;
+  gap: 8px;
+}
+
+.owned_wallpaper_actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0 4px 6px;
+}
+
+.owned_privacy_badge {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.owned_privacy_badge.public {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.owned_privacy_badge.private {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.owned_action_btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #1f2937;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.owned_action_btn.danger {
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
 .muted {
@@ -341,7 +548,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .account_tabs span {
+  .account_tabs button {
     font-size: 16px;
     padding: 8px 14px;
   }

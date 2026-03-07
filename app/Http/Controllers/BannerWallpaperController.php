@@ -22,6 +22,7 @@ class BannerWallpaperController extends Controller
 
         $wallpapersByCode = Wallpaper::with(['links'])
             ->where('type', 2)
+            ->where('is_private', false)
             ->whereIn('code', $codes->all())
             ->get()
             ->keyBy('code');

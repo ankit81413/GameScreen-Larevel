@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/saved-wallpapers', [SavedWallpaperController::class, 'index'])->name('saved.wallpapers.index');
     Route::post('/saved-wallpapers/toggle', [SavedWallpaperController::class, 'toggle'])->name('saved.wallpapers.toggle');
     Route::get('/my-wallpapers', [UploadWallpaperController::class, 'mine'])->name('upload.mine');
+    Route::get('/my-wallpapers-archived', [UploadWallpaperController::class, 'mineArchived'])->name('upload.mine.archived');
     Route::get('/onboarding/profile', [OnboardingProfileController::class, 'show'])->name('onboarding.profile.show');
     Route::post('/onboarding/profile', [OnboardingProfileController::class, 'store'])->name('onboarding.profile.store');
     Route::get('/onboarding/interests', [OnboardingInterestController::class, 'show'])->name('onboarding.interests.show');
@@ -67,6 +68,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/account/wallpapers/{wallpaper}', [WallpaperManageController::class, 'update'])->name('account.wallpapers.update');
     Route::patch('/account/wallpapers/{wallpaper}/privacy', [WallpaperManageController::class, 'togglePrivacy'])->name('account.wallpapers.privacy');
     Route::delete('/account/wallpapers/{wallpaper}', [WallpaperManageController::class, 'destroy'])->name('account.wallpapers.destroy');
+    Route::post('/account/wallpapers/{wallpaper}/restore', [WallpaperManageController::class, 'restore'])->name('account.wallpapers.restore');
     Route::post('/wallpapers/{wallpaper}/like', [WallpaperInteractionController::class, 'toggleLike'])->name('wallpapers.like');
     Route::post('/wallpapers/{wallpaper}/comments', [WallpaperInteractionController::class, 'storeComment'])->name('wallpapers.comments.store');
     Route::delete('/wallpaper-comments/{comment}', [WallpaperInteractionController::class, 'destroyComment'])->name('wallpapers.comments.destroy');

@@ -450,48 +450,108 @@
 }
 
 .owned_wallpaper_item {
-  display: grid;
-  gap: 8px;
+  position: relative;
+  grid-column: span 2;
+  grid-row: span 2;
+  margin-bottom: 10px;
+  width: fit-content;
 }
 
-.owned_wallpaper_actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 0 4px 6px;
+.owned_wallpaper_item.portrait {
+  grid-row: span 3;
 }
 
-.owned_privacy_badge {
+.owned_menu_wrap {
+  position: absolute;
+  top: 8px;
+  top: 0px;
+  right: 52px;
+  z-index: 9;
+}
+.owned_menu_wrap {
+  position: absolute;
+  top: 8px;
+  top: 0px;
+  right: 40px;
+  z-index: 9;
+}
+
+.owned_menu_trigger {
+  /* width: 34px;
+  height: 34px;
   border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 11px;
-  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25); */
+  height: 30px;
+  width: 30px;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #ff9900;
+  color: #ff9900;
+  border-radius: 50%;
+  margin: 15px;
+  font-size: 16px;
+  padding: 5px;
+  padding-left: 7px;
 }
 
-.owned_privacy_badge.public {
-  background: #dcfce7;
-  color: #166534;
+.owned_menu_trigger i {
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-.owned_privacy_badge.private {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.owned_action_btn {
-  border: 1px solid #d1d5db;
+.owned_menu_dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
   background: #fff;
-  color: #1f2937;
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 700;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.owned_menu_item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #111827;
+  padding: 9px 11px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.owned_action_btn.danger {
-  border-color: #fca5a5;
+.owned_menu_item:hover {
+  background: #f3f4f6;
+}
+
+.owned_menu_item.muted {
+  color: #6b7280;
+  cursor: default;
+}
+
+.owned_menu_item.muted:hover {
+  background: transparent;
+}
+
+.owned_menu_item.danger {
   color: #b91c1c;
 }
 

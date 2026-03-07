@@ -1,7 +1,8 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import React, { useEffect, useRef, useState } from 'react';
 import { home, login, logout, register, viewWallpaper } from '@/routes';
 import type { SharedData } from '@/types';
+import { showGamingAlert } from '@/lib/gaming-alerts';
 
 export default function Header() {
     const { auth } = usePage<SharedData>().props as any;
@@ -14,6 +15,9 @@ export default function Header() {
     const [isRecentSearchesLoading, setIsRecentSearchesLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearchResultsLoading, setIsSearchResultsLoading] = useState(false);
+    const [isCodeSearchOpen, setIsCodeSearchOpen] = useState(false);
+    const [codeDigits, setCodeDigits] = useState(['', '', '', '']);
+    const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
     const roboticPlaceholders = [
         '> calibrating query engine...',
         '> scan: neon_city_4k',
@@ -68,29 +72,6 @@ export default function Header() {
         };
     }, []);
 
-    const loadGuestSearches = () => {
-        if (typeof window === 'undefined') {
-            return [];
-        }
-        try {
-            const raw = window.localStorage.getItem('recent_searches');
-            const parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? parsed.slice(0, 10) : [];
-        } catch (error) {
-            return [];
-        }
-    };
-
-    const saveGuestSearch = (query: string) => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-        const existing = loadGuestSearches().filter((item) => item !== query);
-        const updated = [query, ...existing].slice(0, 10);
-        window.localStorage.setItem('recent_searches', JSON.stringify(updated));
-        setRecentSearches(updated);
-    };
-
     const getCsrfToken = () =>
         (
             document
@@ -98,9 +79,23 @@ export default function Header() {
                 ?.getAttribute('content') ?? ''
         ).trim();
 
+    const getXsrfTokenFromCookie = () => {
+        if (typeof document === 'undefined') {
+            return '';
+        }
+        const cookie = document.cookie
+            .split('; ')
+            .find((item) => item.startsWith('XSRF-TOKEN='));
+        if (!cookie) {
+            return '';
+        }
+        const value = cookie.split('=').slice(1).join('=');
+        return decodeURIComponent(value ?? '').trim();
+    };
+
     const loadRecentSearches = async () => {
         if (!isAuthenticated) {
-            setRecentSearches(loadGuestSearches());
+            setRecentSearches([]);
             return;
         }
 
@@ -111,14 +106,14 @@ export default function Header() {
                 credentials: 'same-origin',
             });
             if (!response.ok) {
-                setRecentSearches(loadGuestSearches());
+                setRecentSearches([]);
                 return;
             }
             const data = await response.json();
             const normalized = Array.isArray(data) ? data.slice(0, 10) : [];
-            setRecentSearches(normalized.length ? normalized : loadGuestSearches());
+            setRecentSearches(normalized);
         } catch (error) {
-            setRecentSearches(loadGuestSearches());
+            setRecentSearches([]);
         } finally {
             setIsRecentSearchesLoading(false);
         }
@@ -126,28 +121,33 @@ export default function Header() {
 
     const persistSearch = async (query: string) => {
         if (!isAuthenticated) {
-            saveGuestSearch(query);
             return;
         }
 
         try {
+            const csrfToken = getCsrfToken();
+            const xsrfToken = getXsrfTokenFromCookie();
             const response = await fetch('/search-history', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
                 },
-                body: JSON.stringify({ query }),
+                body: JSON.stringify({
+                    query,
+                    _token: csrfToken,
+                }),
             });
             if (!response.ok) {
-                saveGuestSearch(query);
                 return;
             }
             await loadRecentSearches();
         } catch (error) {
-            saveGuestSearch(query);
+            return;
         }
     };
 
@@ -162,6 +162,87 @@ export default function Header() {
         setIsSearchFocused(false);
         searchInputRef.current?.blur();
         router.visit(`/auto-search?search=${encodeURIComponent(normalizedQuery)}`);
+    };
+
+    const triggerCodeSearch = () => {
+        const normalizedCode = codeDigits.join('').replace(/[^0-9]/g, '').slice(0, 4);
+        if (!normalizedCode) {
+            return;
+        }
+
+        const paddedCode = normalizedCode.padStart(4, '0');
+
+        setCodeDigits(['', '', '', '']);
+        router.visit(viewWallpaper(paddedCode).url);
+    };
+
+    const handleLogout = () => {
+        router.post(logout().url, {}, {
+            onSuccess: () => {
+                showGamingAlert({
+                    type: 'success',
+                    title: 'Logged Out',
+                    message: 'You have been signed out.',
+                });
+            },
+            onError: () => {
+                showGamingAlert({
+                    type: 'error',
+                    title: 'Logout Failed',
+                    message: 'Could not log out. Please try again.',
+                });
+            },
+        });
+    };
+
+    const handleCodeDigitChange = (index: number, value: string) => {
+        const digit = value.replace(/[^0-9]/g, '').slice(-1);
+        setCodeDigits((current) => {
+            const next = [...current];
+            next[index] = digit;
+            return next;
+        });
+
+        if (digit && index < 3) {
+            codeInputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleCodeKeyDown = (
+        index: number,
+        event: React.KeyboardEvent<HTMLInputElement>,
+    ) => {
+        if (event.key === 'Backspace' && !codeDigits[index] && index > 0) {
+            codeInputRefs.current[index - 1]?.focus();
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            triggerCodeSearch();
+        }
+    };
+
+    const handleCodePaste = (
+        event: React.ClipboardEvent<HTMLInputElement>,
+    ) => {
+        event.preventDefault();
+        const pastedDigits = event.clipboardData
+            .getData('text')
+            .replace(/[^0-9]/g, '')
+            .slice(0, 4)
+            .split('');
+        if (!pastedDigits.length) {
+            return;
+        }
+
+        const nextDigits = ['', '', '', ''];
+        pastedDigits.forEach((digit, index) => {
+            nextDigits[index] = digit;
+        });
+        setCodeDigits(nextDigits);
+
+        const focusIndex = Math.min(pastedDigits.length, 4) - 1;
+        codeInputRefs.current[focusIndex]?.focus();
     };
 
     useEffect(() => {
@@ -210,6 +291,7 @@ export default function Header() {
 
             if (!searchContainerRef.current.contains(event.target as Node)) {
                 setIsSearchFocused(false);
+                setIsCodeSearchOpen(false);
             }
         };
 
@@ -219,6 +301,17 @@ export default function Header() {
 
     return (
         <>
+            <Head>
+                <link rel="preconnect" href="https://fonts.bunny.net" />
+                <link
+                    href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600"
+                    rel="stylesheet"
+                />
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Rethink+Sans:ital,wght@0,400..800;1,400..800&family=Roboto:ital,wght@0,100..900;1,100..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+                    rel="stylesheet"
+                />
+            </Head>
             <div
                 className={`search_focus_backdrop ${isSearchFocused ? 'show' : ''}`}
                 onMouseDown={() => {
@@ -255,102 +348,155 @@ export default function Header() {
                                 value={searchValue}
                                 placeholder={placeholderText || '> booting search...'}
                                 onFocus={() => setIsSearchFocused(true)}
-                                onChange={(event) =>
-                                    setSearchValue(event.target.value)
-                                }
+                                onChange={(event) => {
+                                    setSearchValue(event.target.value);
+                                    setIsCodeSearchOpen(false);
+                                }}
                             />
-                            <div className="search_with_code"><i className="fa-solid fa-expand"></i>
-                            
-                            </div>
+                            <button
+                                type="button"
+                                className="search_with_code"
+                                aria-label="Search by code"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => {
+                                    setIsCodeSearchOpen((current) => !current);
+                                    window.setTimeout(() => codeInputRefs.current[0]?.focus(), 0);
+                                }}
+                            >
+                                <i className="fa-solid fa-expand"></i>
+                            </button>
 
                             {isSearchFocused && (
                                 <div className="search_history_container">
-                                    <div className="search_history_header">
-                                        <span>
-                                            {searchValue.trim().length > 0
-                                                ? 'Search Results'
-                                                : 'Recent Searches'}
-                                        </span>
-                                    </div>
-
-                                    {searchValue.trim().length > 0 ? (
-                                        isSearchResultsLoading ? (
-                                            <div className="search_history_empty">
-                                                Searching...
+                                    {isCodeSearchOpen ? (
+                                        <div className="search_block code_search_block">
+                                            <div className="search_history_header">
+                                                <span>Search With Code</span>
                                             </div>
-                                        ) : searchResults.length ? (
-                                            <ul className="search_result_list">
-                                                {searchResults.map((item) => (
-                                                    <li key={item.code}>
-                                                        <Link
-                                                            href={viewWallpaper(item.code)}
-                                                            onClick={() => {
-                                                                persistSearch(
-                                                                    searchValue.trim(),
-                                                                );
-                                                                setIsSearchFocused(false);
+                                            <form
+                                                className="code_digit_form"
+                                                onSubmit={(event) => {
+                                                    event.preventDefault();
+                                                    triggerCodeSearch();
+                                                }}
+                                            >
+                                                <div className="code_digit_inputs">
+                                                    {codeDigits.map((digit, index) => (
+                                                        <input
+                                                            key={`code-digit-${index}`}
+                                                            ref={(element) => {
+                                                                codeInputRefs.current[index] =
+                                                                    element;
                                                             }}
-                                                            onMouseDown={(event) =>
-                                                                event.preventDefault()
+                                                            className="code_digit_input"
+                                                            value={digit}
+                                                            onChange={(event) =>
+                                                                handleCodeDigitChange(
+                                                                    index,
+                                                                    event.target.value,
+                                                                )
                                                             }
-                                                        >
-                                                            <span className="thumb">
-                                                                <img
-                                                                    src={item.thumbnail}
-                                                                    alt={item.name}
-                                                                />
-                                                            </span>
-                                                            <span className="meta">
-                                                                <span className="title">
-                                                                    {item.name}
-                                                                </span>
-                                                                {item.quality ? (
-                                                                    <span className="sub">
-                                                                        Quality:{' '}
-                                                                        {item.quality}
-                                                                    </span>
-                                                                ) : null}
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <div className="search_history_empty">
-                                                No results found.
-                                            </div>
-                                        )
-                                    ) : (
-                                        <>
-                                            {isRecentSearchesLoading ? (
-                                                <div className="search_history_empty">
-                                                    Loading...
+                                                            onKeyDown={(event) =>
+                                                                handleCodeKeyDown(index, event)
+                                                            }
+                                                            onPaste={handleCodePaste}
+                                                            inputMode="numeric"
+                                                            maxLength={1}
+                                                            aria-label={`Code digit ${index + 1}`}
+                                                        />
+                                                    ))}
                                                 </div>
-                                            ) : recentSearches.length ? (
-                                                <ul className="search_history_list">
-                                                    {recentSearches.map((item) => (
-                                                        <li key={item}>
-                                                            <button
-                                                                type="button"
+                                                <button type="submit" className="code_go_button">
+                                                    Go
+                                                </button>
+                                            </form>
+                                        </div>
+                                    ) : searchValue.trim().length > 0 ? (
+                                        <div className="search_block search_results_block">
+                                            <div className="search_history_header">
+                                                <span>Search Results</span>
+                                            </div>
+                                            {isSearchResultsLoading ? (
+                                                <div className="search_history_empty">
+                                                    Searching...
+                                                </div>
+                                            ) : searchResults.length ? (
+                                                <ul className="search_result_list">
+                                                    {searchResults.map((item) => (
+                                                        <li key={item.code}>
+                                                            <Link
+                                                                href={viewWallpaper(item.code)}
+                                                                onClick={() => {
+                                                                    persistSearch(
+                                                                        searchValue.trim(),
+                                                                    );
+                                                                    setIsSearchFocused(false);
+                                                                }}
                                                                 onMouseDown={(event) =>
                                                                     event.preventDefault()
                                                                 }
-                                                                onClick={() =>
-                                                                    triggerSearch(item)
-                                                                }
                                                             >
-                                                                <i className="fa-solid fa-clock-rotate-left"></i>
-                                                                <span>{item}</span>
-                                                            </button>
+                                                                <span className="thumb">
+                                                                    <img
+                                                                        src={item.thumbnail}
+                                                                        alt={item.name}
+                                                                    />
+                                                                </span>
+                                                                <span className="meta">
+                                                                    <span className="title">
+                                                                        {item.name}
+                                                                    </span>
+                                                                    {item.quality ? (
+                                                                        <span className="sub">
+                                                                            Quality:{' '}
+                                                                            {item.quality}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </span>
+                                                            </Link>
                                                         </li>
                                                     ))}
                                                 </ul>
                                             ) : (
                                                 <div className="search_history_empty">
-                                                    No recent searches yet.
+                                                    No results found.
                                                 </div>
                                             )}
-                                        </>
+                                        </div>
+                                    ) : (
+                                        <div className="search_block">
+                                        <div className="search_history_header">
+                                            <span>Search History</span>
+                                        </div>
+                                        {isRecentSearchesLoading ? (
+                                            <div className="search_history_empty">
+                                                Loading...
+                                            </div>
+                                        ) : recentSearches.length ? (
+                                            <ul className="search_history_list">
+                                                {recentSearches.map((item) => (
+                                                    <li key={item}>
+                                                        <button
+                                                            type="button"
+                                                            onMouseDown={(event) =>
+                                                                event.preventDefault()
+                                                            }
+                                                            onClick={() =>
+                                                                triggerSearch(item)
+                                                            }
+                                                        >
+                                                            <i className="fa-solid fa-clock-rotate-left"></i>
+                                                            <span>{item}</span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <div className="search_history_empty">
+                                                No recent searches yet.
+                                            </div>
+                                        )}
+                                    </div>
                                     )}
                                 </div>
                             )}
@@ -363,14 +509,13 @@ export default function Header() {
                             <Link href="/account" className="LoginButton AccountButton">
                                 Account <i className="fa-solid fa-user-astronaut"></i>
                             </Link>
-                            <Link
-                                href={logout()}
-                                method="post"
-                                as="button"
+                            <button
+                                type="button"
+                                onClick={handleLogout}
                                 className="SignupButton"
                             >
                                 Logout
-                            </Link>
+                            </button>
                         </>
                     ) : (
                         <>

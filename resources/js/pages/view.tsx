@@ -1,5 +1,6 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { SharedData } from '@/types';
+import { login } from '@/routes';
 import '../../css/style.css';
 import '../../css/new_style.css';
 import Header from '@/components/includes/Header';
@@ -11,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import WallpaperCard from '@/components/common/WallpaperCard';
 import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
+import { showGamingAlert } from '@/lib/gaming-alerts';
 
 export default function Welcome({
     canRegister = true,
@@ -20,6 +22,8 @@ export default function Welcome({
     const { auth } = usePage<SharedData>().props as any;
     const { wallpaper } = usePage().props as any;
     const [isDownloadBoxOpen, setIsDownloadBoxOpen] = useState(false);
+    const [isSaved, setIsSaved] = useState<boolean>(Boolean(wallpaper?.is_saved));
+    const [isSaveLoading, setIsSaveLoading] = useState(false);
     const {
         items: similarWallpapers,
         isLoading: isSimilarWallpapersLoading,
@@ -109,7 +113,11 @@ export default function Welcome({
 
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(wallpaperUrl);
-                window.alert('Wallpaper URL copied to clipboard');
+                showGamingAlert({
+                    type: 'success',
+                    title: 'Link Copied',
+                    message: 'Wallpaper URL copied to clipboard.',
+                });
                 return;
             }
 
@@ -117,8 +125,93 @@ export default function Welcome({
         } catch (error) {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(wallpaperUrl);
-                window.alert('Wallpaper URL copied to clipboard');
+                showGamingAlert({
+                    type: 'success',
+                    title: 'Link Copied',
+                    message: 'Wallpaper URL copied to clipboard.',
+                });
             }
+        }
+    };
+
+    useEffect(() => {
+        setIsSaved(Boolean(wallpaper?.is_saved));
+    }, [wallpaper?.id, wallpaper?.is_saved]);
+
+    const getCsrfToken = () =>
+        (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? ''
+        ).trim();
+
+    const handleSaveWallpaper = async () => {
+        if (!auth?.user) {
+            showGamingAlert({
+                type: 'warning',
+                title: 'Login Needed',
+                message: 'Please login to save wallpapers.',
+            });
+            router.visit(login().url);
+            return;
+        }
+
+        if (isSaveLoading) {
+            return;
+        }
+
+        setIsSaveLoading(true);
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch('/saved-wallpapers/toggle', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({
+                    wallpaper_id: wallpaper.id,
+                    _token: csrfToken,
+                }),
+            });
+
+            if (response.status === 401) {
+                showGamingAlert({
+                    type: 'warning',
+                    title: 'Login Needed',
+                    message: 'Please login to save wallpapers.',
+                });
+                router.visit(login().url);
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('Failed to save wallpaper');
+            }
+
+            const data = await response.json();
+            setIsSaved(Boolean(data?.saved));
+            showGamingAlert({
+                type: data?.saved ? 'success' : 'warning',
+                title: data?.saved ? 'Wallpaper Saved' : 'Wallpaper Unsaved',
+                message:
+                    typeof data?.message === 'string'
+                        ? data.message
+                        : data?.saved
+                          ? 'Added to your saved wallpapers.'
+                          : 'Removed from your saved wallpapers.',
+            });
+        } catch (error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Save Failed',
+                message: 'Could not update saved wallpaper. Please try again.',
+            });
+        } finally {
+            setIsSaveLoading(false);
         }
     };
 
@@ -143,14 +236,17 @@ export default function Welcome({
                     <ViewWallpaperDisplay links={wallpaper.links} thumbnail={wallpaper.thumbnail} type={wallpaper.type}/>
                     <div className="menu">
                         <div className="name">
-                            <h2 id="name-text">hi</h2>
+                            <h2 id="name-text">{wallpaper.name}</h2>
                         </div>
                         <div className="buttons">
                             <div className="share" onClick={handleShareWallpaper}>
                                 <i className="fa-solid fa-arrow-up-from-bracket"></i>
                             </div>
-                            <div className="save">
-                                <i className="fa-solid fa-bookmark"></i>
+                            <div
+                                className={`save ${isSaved ? 'saved' : ''} ${isSaveLoading ? 'saving' : ''}`}
+                                onClick={handleSaveWallpaper}
+                            >
+                                <i className={isSaved ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}></i>
                             </div>
                             <div className="download">
                                 <i

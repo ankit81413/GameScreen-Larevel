@@ -49,14 +49,18 @@ class SearchHistoryController extends Controller
             'query' => $query,
         ]);
 
-        $overflowIds = SearchHistory::query()
+        $totalCount = SearchHistory::query()
             ->where('user_id', $user->id)
-            ->latest('id')
-            ->skip(10)
-            ->pluck('id');
+            ->count();
 
-        if ($overflowIds->isNotEmpty()) {
-            SearchHistory::query()->whereIn('id', $overflowIds)->delete();
+        if ($totalCount > 10) {
+            $rowsToDelete = $totalCount - 10;
+
+            SearchHistory::query()
+                ->where('user_id', $user->id)
+                ->oldest('id')
+                ->limit($rowsToDelete)
+                ->delete();
         }
 
         return response()->json(['ok' => true]);

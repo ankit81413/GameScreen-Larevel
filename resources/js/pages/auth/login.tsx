@@ -10,6 +10,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
+import { showGamingAlert } from '@/lib/gaming-alerts';
 
 type Props = {
     status?: string;
@@ -32,28 +33,46 @@ export default function Login({
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
+                onSuccess={() => {
+                    showGamingAlert({
+                        type: 'success',
+                        title: 'Login Success',
+                        message: 'Welcome back to Game Screen.',
+                    });
+                }}
+                onError={(errors) => {
+                    const firstError = Object.values(errors ?? {})[0];
+                    showGamingAlert({
+                        type: 'error',
+                        title: 'Login Failed',
+                        message:
+                            typeof firstError === 'string'
+                                ? firstError
+                                : 'Invalid credentials. Try again.',
+                    });
+                }}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="email" className="text-sm font-medium text-[#d1d5db]">
-                                    Email address
+                                <Label htmlFor="login" className="text-sm font-medium text-[#d1d5db]">
+                                    Username or email
                                 </Label>
                                 <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
+                                    id="login"
+                                    type="text"
+                                    name="login"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
+                                    autoComplete="username"
+                                    placeholder="username or email"
                                     className="h-11 rounded-lg border-white/15 bg-[#0b0e14] text-white placeholder:text-[#6b7280] focus-visible:border-[#ff9900]/70 focus-visible:ring-[#ff9900]/25"
                                     style={{padding:"10px"}}
                                 />
-                                <InputError message={errors.email} />
+                                <InputError message={errors.login} />
                             </div>
 
                             <div className="grid gap-2">

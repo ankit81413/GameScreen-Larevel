@@ -1,18 +1,18 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { SharedData } from '@/types';
-import { login } from '@/routes';
 import '../../css/style.css';
 import '../../css/new_style.css';
-import Header from '@/components/includes/Header';
-import Footer from '@/components/includes/Footer';
 import '../../css/view.css';
-import ViewWallpaperDisplay from '@/components/pages/view/View_wallpaper_display';
-import View_tag from '@/components/pages/view/View_Tag';
 import React, { useEffect, useState } from 'react';
-import WallpaperCard from '@/components/common/WallpaperCard';
 import LoadMoreWallpapersButton from '@/components/common/LoadMoreWallpapersButton';
+import WallpaperCard from '@/components/common/WallpaperCard';
+import Footer from '@/components/includes/Footer';
+import Header from '@/components/includes/Header';
+import View_tag from '@/components/pages/view/View_Tag';
+import ViewWallpaperDisplay from '@/components/pages/view/View_wallpaper_display';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { showGamingAlert } from '@/lib/gaming-alerts';
+import { login } from '@/routes';
 
 export default function Welcome({
     canRegister = true,

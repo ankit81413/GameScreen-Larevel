@@ -1,7 +1,7 @@
-import React from 'react';
 import { Link } from '@inertiajs/react';
-import Header from '@/components/includes/Header';
+import React from 'react';
 import Footer from '@/components/includes/Footer';
+import Header from '@/components/includes/Header';
 import '../../css/style.css';
 import '../../css/new_style.css';
 import '../../css/account.css';

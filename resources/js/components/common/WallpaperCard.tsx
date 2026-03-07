@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from '@inertiajs/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { viewWallpaper } from '@/routes';
 
 const PLAY_EVENT_NAME = 'wallpaper-card-play';

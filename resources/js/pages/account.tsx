@@ -1,9 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import AccountDashboardLayout from '@/layouts/account-dashboard-layout';
-import type { SharedData } from '@/types';
 import React, { useEffect, useState } from 'react';
-import { showGamingAlert } from '@/lib/gaming-alerts';
 import WallpaperCard from '@/components/common/WallpaperCard';
+import AccountDashboardLayout from '@/layouts/account-dashboard-layout';
+import { showGamingAlert } from '@/lib/gaming-alerts';
+import type { SharedData } from '@/types';
 
 type SavedWallpaperItem = {
     id: number;
@@ -347,7 +347,7 @@ export default function Account() {
                                                         onClick={() =>
                                                             togglePrivacy(
                                                                 item.id,
-                                                                !Boolean(item.is_private),
+                                                                !item.is_private,
                                                             )
                                                         }
                                                     >

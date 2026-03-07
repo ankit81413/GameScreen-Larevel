@@ -42,6 +42,57 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
         return exact480?.url ?? '';
     }, [item.links]);
 
+    const maxQualityLabel = useMemo(() => {
+        const links = Array.isArray(item.links) ? item.links : [];
+        if (!links.length) {
+            return '4k';
+        }
+
+        const parsedValues = links
+            .map((link: any) => {
+                const raw = String(link?.quality ?? '').trim().toLowerCase();
+                if (!raw) {
+                    return 0;
+                }
+
+                if (raw === '2k') return 1440;
+                if (raw === '4k') return 2160;
+                if (raw === '8k') return 4320;
+
+                const kMatch = raw.match(/^(\d+)\s*k$/);
+                if (kMatch) {
+                    return Number.parseInt(kMatch[1], 10) * 1000;
+                }
+
+                const pMatch = raw.match(/^(\d+)\s*p$/);
+                if (pMatch) {
+                    return Number.parseInt(pMatch[1], 10);
+                }
+
+                const numMatch = raw.match(/^(\d+)$/);
+                if (numMatch) {
+                    return Number.parseInt(numMatch[1], 10);
+                }
+
+                return 0;
+            })
+            .filter((value: number) => !Number.isNaN(value) && value > 0);
+
+        if (!parsedValues.length) {
+            return '4k';
+        }
+
+        const maxValue = Math.max(...parsedValues);
+        if (maxValue === 1440) return '2k';
+        if (maxValue === 2160) return '4k';
+        if (maxValue === 4320) return '8k';
+        if (maxValue >= 2000 && maxValue % 1000 === 0) {
+            return `${Math.round(maxValue / 1000)}k`;
+        }
+
+        return `${maxValue}p`;
+    }, [item.links]);
+
     const stopVideoAndUnload = () => {
         const video = videoRef.current;
         if (video) {
@@ -185,7 +236,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
             </div>
             <div className="details">
                 <h2>{item.name}</h2>
-                <p>Quality : 4k</p>
+                <p>Quality : {maxQualityLabel}</p>
             </div>
         </div>
     );

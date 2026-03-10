@@ -191,6 +191,42 @@
   color: #fff;
 }
 
+.account_processing_notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, rgba(255, 245, 214, 0.96), rgba(255, 255, 255, 0.94));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.account_processing_notice strong {
+  display: block;
+  margin: 0 0 4px;
+  color: #7c2d12;
+  font-size: 15px;
+}
+
+.account_processing_notice p {
+  margin: 0;
+  color: #9a3412;
+  font-size: 13px;
+}
+
+.account_processing_notice span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #9a3412;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .panel {
   background: #f8f8f8;
   border: 1px solid #d7d7d7;
@@ -555,6 +591,38 @@
   color: #b91c1c;
 }
 
+.wallpaper-card-processing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.02), rgba(15, 23, 42, 0.45));
+  pointer-events: none;
+}
+
+.wallpaper-card-processing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.92);
+  color: #f8fafc;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.wallpaper-card-processing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+  box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.16);
+}
+
 .muted {
   color: #616161;
 }
@@ -611,6 +679,11 @@
   .account_tabs button {
     font-size: 16px;
     padding: 8px 14px;
+  }
+
+  .account_processing_notice {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .form_grid {

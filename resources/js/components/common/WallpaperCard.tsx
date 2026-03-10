@@ -11,6 +11,7 @@ type WallpaperCardProps = {
 export default function WallpaperCard({ item }: WallpaperCardProps) {
     const is_livewallpaper = item.type === 2;
     const isLandscape = item.orientation === 'land';
+    const isProcessing = Boolean(item.processing);
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
     const [isLoadingVideo, setIsLoadingVideo] = useState(false);
@@ -43,9 +44,13 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
     }, [item.links]);
 
     const maxQualityLabel = useMemo(() => {
+        if (isProcessing) {
+            return 'Processing...';
+        }
+
         const links = Array.isArray(item.links) ? item.links : [];
         if (!links.length) {
-            return '4k';
+            return 'Pending';
         }
 
         const parsedValues = links
@@ -79,7 +84,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
             .filter((value: number) => !Number.isNaN(value) && value > 0);
 
         if (!parsedValues.length) {
-            return '4k';
+            return 'Pending';
         }
 
         const maxValue = Math.max(...parsedValues);
@@ -91,7 +96,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
         }
 
         return `${maxValue}p`;
-    }, [item.links]);
+    }, [isProcessing, item.links]);
 
     const stopVideoAndUnload = () => {
         const video = videoRef.current;
@@ -126,7 +131,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!is_livewallpaper || !video480pUrl) {
+        if (isProcessing || !is_livewallpaper || !video480pUrl) {
             return;
         }
 
@@ -150,7 +155,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
             try {
                 await video.play();
                 setIsPlayingVideo(true);
-            } catch (error) {
+            } catch (_error) {
                 setIsPlayingVideo(false);
             }
         } else {
@@ -162,55 +167,74 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
     return (
         <div className={`wallpaper ${isLandscape ? 'landscape' : 'portrait'}`}>
             <div className="image">
-                <Link href={viewWallpaper(item.code)}>
-                    {!shouldLoadVideo && (
+                {isProcessing ? (
+                    <div>
                         <img
                             src={`${item.thumbnail}`}
                             alt="wallpaper"
                             id={`wallpaper_${item.id}`}
                         />
-                    )}
+                    </div>
+                ) : (
+                    <Link href={viewWallpaper(item.code)}>
+                        {!shouldLoadVideo && (
+                            <img
+                                src={`${item.thumbnail}`}
+                                alt="wallpaper"
+                                id={`wallpaper_${item.id}`}
+                            />
+                        )}
 
-                    {shouldLoadVideo && (
-                        <video
-                            ref={videoRef}
-                            src={video480pUrl}
-                            poster={item.thumbnail}
-                            muted
-                            loop
-                            playsInline
-                            onLoadStart={() => {
-                                setIsLoadingVideo(true);
-                            }}
-                            onCanPlay={async () => {
-                                setIsLoadingVideo(false);
-                                try {
-                                    await videoRef.current?.play();
+                        {shouldLoadVideo && (
+                            <video
+                                ref={videoRef}
+                                src={video480pUrl}
+                                poster={item.thumbnail}
+                                muted
+                                loop
+                                playsInline
+                                onLoadStart={() => {
+                                    setIsLoadingVideo(true);
+                                }}
+                                onCanPlay={async () => {
+                                    setIsLoadingVideo(false);
+                                    try {
+                                        await videoRef.current?.play();
+                                        setIsPlayingVideo(true);
+                                    } catch (_error) {
+                                        setIsPlayingVideo(false);
+                                    }
+                                }}
+                                onWaiting={() => {
+                                    setIsLoadingVideo(true);
+                                }}
+                                onLoadedData={() => {
+                                    setIsLoadingVideo(false);
+                                }}
+                                onPlaying={() => {
+                                    setIsLoadingVideo(false);
                                     setIsPlayingVideo(true);
-                                } catch (error) {
+                                }}
+                                onPause={() => {
                                     setIsPlayingVideo(false);
-                                }
-                            }}
-                            onWaiting={() => {
-                                setIsLoadingVideo(true);
-                            }}
-                            onLoadedData={() => {
-                                setIsLoadingVideo(false);
-                            }}
-                            onPlaying={() => {
-                                setIsLoadingVideo(false);
-                                setIsPlayingVideo(true);
-                            }}
-                            onPause={() => {
-                                setIsPlayingVideo(false);
-                            }}
-                            onError={() => {
-                                setIsLoadingVideo(false);
-                                setIsPlayingVideo(false);
-                            }}
-                        />
-                    )}
-                </Link>
+                                }}
+                                onError={() => {
+                                    setIsLoadingVideo(false);
+                                    setIsPlayingVideo(false);
+                                }}
+                            />
+                        )}
+                    </Link>
+                )}
+
+                {isProcessing && (
+                    <div className="wallpaper-card-processing">
+                        <div className="wallpaper-card-processing-badge">
+                            <span className="wallpaper-card-processing-dot"></span>
+                            Processing
+                        </div>
+                    </div>
+                )}
 
                 {isLoadingVideo && (
                     <div
@@ -221,7 +245,7 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
                     </div>
                 )}
 
-                {is_livewallpaper && (
+                {is_livewallpaper && !isProcessing && (
                     <div className="i_container">
                         <div
                             className="wallpaper-play-button"

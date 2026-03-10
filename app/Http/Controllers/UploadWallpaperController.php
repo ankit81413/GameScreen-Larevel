@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessWallpaperResolutions;
 use App\Models\Tag;
 use App\Models\Wallpaper;
 use App\Models\WallpaperLink;
@@ -30,9 +31,24 @@ class UploadWallpaperController extends Controller
             ->with(['links' => function ($query) {
                 $query->select(['id', 'wallpaper_id', 'quality', 'url']);
             }])
+            ->withCount('links')
             ->latest('id')
             ->limit(60)
-            ->get(['id', 'code', 'name', 'thumbnail', 'type', 'orientation', 'is_private']);
+            ->get(['id', 'code', 'name', 'thumbnail', 'type', 'orientation', 'is_private'])
+            ->map(function (Wallpaper $wallpaper) {
+                return [
+                    'id' => $wallpaper->id,
+                    'code' => $wallpaper->code,
+                    'name' => $wallpaper->name,
+                    'thumbnail' => $wallpaper->thumbnail,
+                    'type' => $wallpaper->type,
+                    'orientation' => $wallpaper->orientation,
+                    'is_private' => $wallpaper->is_private,
+                    'links' => $wallpaper->links,
+                    'processing' => $wallpaper->links_count === 0,
+                ];
+            })
+            ->values();
 
         return response()->json($items);
     }
@@ -46,9 +62,25 @@ class UploadWallpaperController extends Controller
             ->with(['links' => function ($query) {
                 $query->select(['id', 'wallpaper_id', 'quality', 'url']);
             }])
+            ->withCount('links')
             ->latest('deleted_at')
             ->limit(60)
-            ->get(['id', 'code', 'name', 'thumbnail', 'type', 'orientation', 'is_private', 'deleted_at']);
+            ->get(['id', 'code', 'name', 'thumbnail', 'type', 'orientation', 'is_private', 'deleted_at'])
+            ->map(function (Wallpaper $wallpaper) {
+                return [
+                    'id' => $wallpaper->id,
+                    'code' => $wallpaper->code,
+                    'name' => $wallpaper->name,
+                    'thumbnail' => $wallpaper->thumbnail,
+                    'type' => $wallpaper->type,
+                    'orientation' => $wallpaper->orientation,
+                    'is_private' => $wallpaper->is_private,
+                    'deleted_at' => $wallpaper->deleted_at,
+                    'links' => $wallpaper->links,
+                    'processing' => $wallpaper->links_count === 0,
+                ];
+            })
+            ->values();
 
         return response()->json($items);
     }
@@ -65,6 +97,8 @@ class UploadWallpaperController extends Controller
         ]);
 
         $user = $request->user();
+        $useExternalResolutionService = (bool) config('resolution_service.enabled');
+        $queuedResolutionPayload = null;
 
         DB::beginTransaction();
         try {
@@ -75,15 +109,24 @@ class UploadWallpaperController extends Controller
             $fileUrl = Storage::url($filePath);
             $fileSizeKb = max(1, (int) round($file->getSize() / 1024));
             $fileMimeType = (string) $file->getMimeType();
+            $thumbnailSourceRelativePath = null;
+            if (!empty($validated['thumbnail'])) {
+                $thumbnailSourceRelativePath = $validated['thumbnail']
+                    ->store('wallpapers/uploads/thumbnails/source', 'public');
+            }
+            $thumbnailUrl = $fileUrl;
+            $qualityThumbnailUrl = $fileUrl;
 
-            $thumbAssets = $this->prepareThumbnailAssets(
-                validated: $validated,
-                uploadedRelativePath: $filePath,
-                uploadedUrl: $fileUrl,
-                uploadedMimeType: $fileMimeType,
-            );
-            $thumbnailUrl = $thumbAssets['thumbnail_url'];
-            $qualityThumbnailUrl = $thumbAssets['quality_thumbnail_url'];
+            if (!$useExternalResolutionService) {
+                $thumbAssets = $this->prepareThumbnailAssets(
+                    uploadedRelativePath: $filePath,
+                    uploadedUrl: $fileUrl,
+                    uploadedMimeType: $fileMimeType,
+                    thumbnailSourceRelativePath: $thumbnailSourceRelativePath,
+                );
+                $thumbnailUrl = $thumbAssets['thumbnail_url'];
+                $qualityThumbnailUrl = $thumbAssets['quality_thumbnail_url'];
+            }
 
             $wallpaper = null;
             for ($attempt = 0; $attempt < 5; $attempt++) {
@@ -111,13 +154,22 @@ class UploadWallpaperController extends Controller
                 throw new \RuntimeException('Could not allocate unique wallpaper code.');
             }
 
-            $this->createLinksFromUploadedFile(
-                wallpaper: $wallpaper,
-                storedRelativePath: $filePath,
-                fileUrl: $fileUrl,
-                fileSizeKb: $fileSizeKb,
-                mimeType: $fileMimeType,
-            );
+            if ($useExternalResolutionService) {
+                $queuedResolutionPayload = [
+                    'wallpaper_id' => $wallpaper->id,
+                    'source_relative_path' => $filePath,
+                    'source_mime_type' => $fileMimeType,
+                    'thumbnail_source_relative_path' => $thumbnailSourceRelativePath,
+                ];
+            } else {
+                $this->createLinksFromUploadedFile(
+                    wallpaper: $wallpaper,
+                    storedRelativePath: $filePath,
+                    fileUrl: $fileUrl,
+                    fileSizeKb: $fileSizeKb,
+                    mimeType: $fileMimeType,
+                );
+            }
 
             $tagIds = $this->resolveTags($validated['tags'] ?? '');
             if (!empty($tagIds)) {
@@ -128,6 +180,17 @@ class UploadWallpaperController extends Controller
         } catch (\Throwable $exception) {
             DB::rollBack();
             throw $exception;
+        }
+
+        if ($queuedResolutionPayload) {
+            ProcessWallpaperResolutions::dispatch(
+                wallpaperId: (int) $queuedResolutionPayload['wallpaper_id'],
+                sourceRelativePath: (string) $queuedResolutionPayload['source_relative_path'],
+                sourceMimeType: (string) $queuedResolutionPayload['source_mime_type'],
+                thumbnailSourceRelativePath: $queuedResolutionPayload['thumbnail_source_relative_path']
+                    ? (string) $queuedResolutionPayload['thumbnail_source_relative_path']
+                    : null,
+            );
         }
 
         return redirect('/account');
@@ -165,11 +228,7 @@ class UploadWallpaperController extends Controller
             return;
         }
 
-        $baseQuality = collect($standards)
-            ->first(fn ($value) => $height >= $value);
-        if (!$baseQuality) {
-            $baseQuality = (int) $height;
-        }
+        $baseQuality = $this->resolveClosestStandardQuality($height, $standards);
 
         WallpaperLink::query()->create([
             'wallpaper_id' => $wallpaper->id,
@@ -204,22 +263,21 @@ class UploadWallpaperController extends Controller
     }
 
     /**
-     * @param array<string,mixed> $validated
      * @return array{thumbnail_url:string,quality_thumbnail_url:string}
      */
     private function prepareThumbnailAssets(
-        array $validated,
         string $uploadedRelativePath,
         string $uploadedUrl,
         string $uploadedMimeType,
+        ?string $thumbnailSourceRelativePath = null,
     ): array {
         $sourceRelativePath = null;
         $sourceMimeType = null;
 
-        if (!empty($validated['thumbnail'])) {
-            $thumbFile = $validated['thumbnail'];
-            $sourceRelativePath = $thumbFile->store('wallpapers/uploads/thumbnails/source', 'public');
-            $sourceMimeType = (string) $thumbFile->getMimeType();
+        if ($thumbnailSourceRelativePath) {
+            $sourceRelativePath = $thumbnailSourceRelativePath;
+            $detectedSourceMimeType = @mime_content_type(Storage::disk('public')->path($thumbnailSourceRelativePath));
+            $sourceMimeType = is_string($detectedSourceMimeType) ? $detectedSourceMimeType : 'image/jpeg';
         } elseif (Str::startsWith($uploadedMimeType, 'image/')) {
             $sourceRelativePath = $uploadedRelativePath;
             $sourceMimeType = $uploadedMimeType;
@@ -241,17 +299,21 @@ class UploadWallpaperController extends Controller
         $sourceAbsolutePath = Storage::disk('public')->path($sourceRelativePath);
         $sourceUrl = Storage::url($sourceRelativePath);
 
-        $thumb480 = $this->createImageVariant(
+        $thumb480 = $this->createConstrainedThumbnailVariant(
             sourcePath: $sourceAbsolutePath,
             sourceRelativePath: $sourceRelativePath,
             mimeType: $sourceMimeType,
             targetHeight: 480,
+            maxSizeKb: 50,
+            suffix: 'thumb',
         );
-        $thumb720 = $this->createImageVariant(
+        $thumb720 = $this->createConstrainedThumbnailVariant(
             sourcePath: $sourceAbsolutePath,
             sourceRelativePath: $sourceRelativePath,
             mimeType: $sourceMimeType,
             targetHeight: 720,
+            maxSizeKb: 140,
+            suffix: 'quality_thumb',
         );
 
         return [
@@ -291,10 +353,7 @@ class UploadWallpaperController extends Controller
             return;
         }
 
-        $baseQuality = collect($standards)->first(fn ($value) => $height >= $value);
-        if (!$baseQuality) {
-            $baseQuality = (int) $height;
-        }
+        $baseQuality = $this->resolveClosestStandardQuality($height, $standards);
 
         WallpaperLink::query()->create([
             'wallpaper_id' => $wallpaper->id,
@@ -349,6 +408,145 @@ class UploadWallpaperController extends Controller
         }
 
         return max(0, (int) trim((string) $output[0]));
+    }
+
+    private function normalizeImageMimeType(string $mimeType): string
+    {
+        $normalized = strtolower(trim($mimeType));
+
+        return match ($normalized) {
+            'image/jpg', 'image/pjpeg' => 'image/jpeg',
+            'image/x-png' => 'image/png',
+            default => $normalized,
+        };
+    }
+
+    private function createImageResource(string $mimeType, string $sourcePath)
+    {
+        $normalized = $this->normalizeImageMimeType($mimeType);
+
+        $resource = match ($normalized) {
+            'image/jpeg' => @imagecreatefromjpeg($sourcePath),
+            'image/png' => @imagecreatefrompng($sourcePath),
+            'image/webp' => function_exists('imagecreatefromwebp')
+                ? @imagecreatefromwebp($sourcePath)
+                : false,
+            default => false,
+        };
+
+        if ($resource) {
+            return $resource;
+        }
+
+        $binary = @file_get_contents($sourcePath);
+        if ($binary === false) {
+            return false;
+        }
+
+        return @imagecreatefromstring($binary);
+    }
+
+    /**
+     * Generates a JPEG thumbnail under a max size budget.
+     * @return array{url:string,size_kb:int}|null
+     */
+    private function createConstrainedThumbnailVariant(
+        string $sourcePath,
+        string $sourceRelativePath,
+        string $mimeType,
+        int $targetHeight,
+        int $maxSizeKb,
+        string $suffix,
+    ): ?array {
+        [$srcWidth, $srcHeight] = $this->safeImageSize($sourcePath);
+        if ($srcWidth < 1 || $srcHeight < 1 || $targetHeight <= 0) {
+            return null;
+        }
+
+        $sourceImage = $this->createImageResource($mimeType, $sourcePath);
+        if (!$sourceImage) {
+            return null;
+        }
+
+        $relativeDir = trim(dirname($sourceRelativePath), '.\\/').'/thumbnails/optimized';
+        $baseName = pathinfo($sourceRelativePath, PATHINFO_FILENAME);
+        Storage::disk('public')->makeDirectory($relativeDir);
+
+        $maxBytes = max(1, $maxSizeKb) * 1024;
+        $qualities = [82, 74, 66, 58, 50, 44, 38, 32, 26, 20, 16, 12, 9, 6];
+        $currentHeight = min($targetHeight, $srcHeight);
+        $bestBytes = 0;
+        $bestRelativePath = null;
+
+        while ($currentHeight >= 120) {
+            $targetWidth = max(1, (int) round(($srcWidth * $currentHeight) / $srcHeight));
+            $targetImage = imagecreatetruecolor($targetWidth, $currentHeight);
+            if (!$targetImage) {
+                break;
+            }
+
+            imagecopyresampled(
+                $targetImage,
+                $sourceImage,
+                0,
+                0,
+                0,
+                0,
+                $targetWidth,
+                $currentHeight,
+                $srcWidth,
+                $srcHeight,
+            );
+
+            foreach ($qualities as $quality) {
+                $variantRelativePath = sprintf(
+                    '%s/%s_%s.jpg',
+                    $relativeDir,
+                    $baseName,
+                    $suffix,
+                );
+                $variantAbsolutePath = Storage::disk('public')->path($variantRelativePath);
+                $saved = @imagejpeg($targetImage, $variantAbsolutePath, $quality);
+
+                if (!$saved || !is_file($variantAbsolutePath)) {
+                    continue;
+                }
+
+                $bytes = (int) (@filesize($variantAbsolutePath) ?: 0);
+                if ($bytes > 0 && ($bestBytes === 0 || $bytes < $bestBytes)) {
+                    $bestBytes = $bytes;
+                    $bestRelativePath = $variantRelativePath;
+                }
+
+                if ($bytes > 0 && $bytes <= $maxBytes) {
+                    imagedestroy($targetImage);
+                    imagedestroy($sourceImage);
+
+                    return [
+                        'url' => Storage::url($variantRelativePath),
+                        'size_kb' => max(1, (int) round($bytes / 1024)),
+                    ];
+                }
+            }
+
+            imagedestroy($targetImage);
+            $nextHeight = (int) floor($currentHeight * 0.88);
+            if ($nextHeight >= $currentHeight) {
+                break;
+            }
+            $currentHeight = $nextHeight;
+        }
+
+        imagedestroy($sourceImage);
+
+        if ($bestRelativePath && $bestBytes > 0) {
+            return [
+                'url' => Storage::url($bestRelativePath),
+                'size_kb' => max(1, (int) round($bestBytes / 1024)),
+            ];
+        }
+
+        return null;
     }
 
     private function extractVideoFrame(string $sourceRelativePath): ?string
@@ -433,20 +631,15 @@ class UploadWallpaperController extends Controller
         string $sourceRelativePath,
         string $mimeType,
         int $targetHeight,
+        array $options = [],
     ): ?array {
+        $mimeType = $this->normalizeImageMimeType($mimeType);
         [$srcWidth, $srcHeight] = $this->safeImageSize($sourcePath);
         if ($srcWidth < 1 || $srcHeight < 1 || $targetHeight <= 0 || $targetHeight >= $srcHeight) {
             return null;
         }
 
-        $sourceImage = match ($mimeType) {
-            'image/jpeg' => @imagecreatefromjpeg($sourcePath),
-            'image/png' => @imagecreatefrompng($sourcePath),
-            'image/webp' => function_exists('imagecreatefromwebp')
-                ? @imagecreatefromwebp($sourcePath)
-                : false,
-            default => false,
-        };
+        $sourceImage = $this->createImageResource($mimeType, $sourcePath);
 
         if (!$sourceImage) {
             return null;
@@ -492,10 +685,22 @@ class UploadWallpaperController extends Controller
         Storage::disk('public')->makeDirectory($relativeDir);
         $variantAbsolutePath = Storage::disk('public')->path($variantRelativePath);
         $saved = match ($mimeType) {
-            'image/jpeg' => @imagejpeg($targetImage, $variantAbsolutePath, 90),
-            'image/png' => @imagepng($targetImage, $variantAbsolutePath, 6),
+            'image/jpeg' => @imagejpeg(
+                $targetImage,
+                $variantAbsolutePath,
+                max(1, min(100, (int) ($options['jpeg_quality'] ?? 90))),
+            ),
+            'image/png' => @imagepng(
+                $targetImage,
+                $variantAbsolutePath,
+                max(0, min(9, (int) ($options['png_compression'] ?? 6))),
+            ),
             'image/webp' => function_exists('imagewebp')
-                ? @imagewebp($targetImage, $variantAbsolutePath, 88)
+                ? @imagewebp(
+                    $targetImage,
+                    $variantAbsolutePath,
+                    max(1, min(100, (int) ($options['webp_quality'] ?? 88))),
+                )
                 : false,
             default => false,
         };
@@ -550,5 +755,34 @@ class UploadWallpaperController extends Controller
         $next = $maxNumeric + 1;
 
         return str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @param array<int,int> $standards
+     */
+    private function resolveClosestStandardQuality(int $height, array $standards): int
+    {
+        if ($height <= 0 || empty($standards)) {
+            return 1080;
+        }
+
+        $closest = $standards[0];
+        $smallestDiff = abs($height - $closest);
+
+        foreach ($standards as $value) {
+            $diff = abs($height - $value);
+            if ($diff < $smallestDiff) {
+                $closest = $value;
+                $smallestDiff = $diff;
+                continue;
+            }
+
+            // Tie-breaker: choose higher quality when equally close.
+            if ($diff === $smallestDiff && $value > $closest) {
+                $closest = $value;
+            }
+        }
+
+        return $closest;
     }
 }

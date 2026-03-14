@@ -5,17 +5,79 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Wallpaper;
+use Illuminate\Support\Str;
 
 class DownloadController extends Controller
 {
     public function download(Request $request, string $code)
     {
+        [$wallpaper, $selectedLink, $requestedQuality] = $this->resolveWallpaperAndLink($request, $code);
+
+        return Inertia::render('Download', [
+            'wallpaper' => [
+                'code' => $wallpaper->code,
+                'name' => $wallpaper->name,
+                'thumbnail' => $wallpaper->thumbnail,
+            ],
+            'requested_quality' => $requestedQuality,
+            'download' => [
+                'url' => $selectedLink['url'] ?? null,
+                'quality' => $selectedLink['quality'] ?? null,
+                'force_url' => route('download.file', [
+                    'code' => $wallpaper->code,
+                    'quality' => $selectedLink['quality'] ?? null,
+                ]),
+            ],
+        ]);
+    }
+
+    public function file(Request $request, string $code)
+    {
+        [$wallpaper, $selectedLink] = $this->resolveWallpaperAndLink($request, $code);
+
+        $downloadUrl = (string) ($selectedLink['url'] ?? '');
+        if ($downloadUrl === '') {
+            abort(404);
+        }
+
+        $urlPath = parse_url($downloadUrl, PHP_URL_PATH) ?: '';
+        $extension = pathinfo($urlPath, PATHINFO_EXTENSION);
+        $safeName = Str::slug((string) $wallpaper->name) ?: 'wallpaper';
+        $fileName = $extension !== '' ? $safeName . '.' . strtolower($extension) : $safeName;
+
+        return response()->streamDownload(function () use ($downloadUrl) {
+            $stream = @fopen($downloadUrl, 'rb');
+            if ($stream === false) {
+                return;
+            }
+
+            while (!feof($stream)) {
+                echo fread($stream, 8192);
+                flush();
+            }
+
+            fclose($stream);
+        }, $fileName, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+        ]);
+    }
+
+    private function resolveWallpaperAndLink(Request $request, string $code): array
+    {
         $wallpaper = Wallpaper::where('code', $code)
             ->where(function ($query) use ($request) {
-                $query->where('is_private', false);
                 if ($request->user()) {
-                    $query->orWhere('owner_id', $request->user()->id);
+                    $query->where('owner_id', $request->user()->id)
+                        ->orWhere(function ($publicQuery) {
+                            $publicQuery->where('is_private', false)
+                                ->whereHas('links');
+                        });
+                    return;
                 }
+
+                $query->where('is_private', false)
+                    ->whereHas('links');
             })
             ->with('links')
             ->firstOrFail();
@@ -46,18 +108,7 @@ class DownloadController extends Controller
             $selectedLink = $links->first();
         }
 
-        return Inertia::render('Download', [
-            'wallpaper' => [
-                'code' => $wallpaper->code,
-                'name' => $wallpaper->name,
-                'thumbnail' => $wallpaper->thumbnail,
-            ],
-            'requested_quality' => $requestedQuality,
-            'download' => [
-                'url' => $selectedLink['url'] ?? null,
-                'quality' => $selectedLink['quality'] ?? null,
-            ],
-        ]);
+        return [$wallpaper, $selectedLink, $requestedQuality];
     }
 
     private function parseQualityValue(string $quality): int

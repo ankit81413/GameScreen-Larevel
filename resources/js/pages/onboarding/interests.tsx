@@ -11,8 +11,9 @@ type InterestTag = {
 };
 
 export default function OnboardingInterests() {
-    const { rounds } = usePage().props as any;
+    const { rounds, existing_interest_count } = usePage().props as any;
     const roundsData = (Array.isArray(rounds) ? rounds : []) as InterestTag[][];
+    const existingInterestCount = Number(existing_interest_count ?? 0);
     const [currentRound, setCurrentRound] = useState(0);
     const [selectedByRound, setSelectedByRound] = useState<number[][]>([
         [],
@@ -127,7 +128,7 @@ export default function OnboardingInterests() {
     return (
         <AuthLayout
             title="Pick Interests"
-            description={`Round ${currentRound + 1} of 3 • Choose exactly 3 tags`}
+            description={`Round ${currentRound + 1} of 3 | Choose exactly 3 new tags${existingInterestCount > 0 ? ` | Current interests: ${existingInterestCount}` : ''}`}
         >
             <Head title="Choose Interests" />
 
@@ -236,3 +237,4 @@ export default function OnboardingInterests() {
         </AuthLayout>
     );
 }
+

@@ -89,8 +89,8 @@ class UploadWallpaperController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'integer', 'in:1,2'],
-            'orientation' => ['required', 'string', 'in:land,port'],
+            'type' => ['nullable', 'integer', 'in:1,2'],
+            'orientation' => ['nullable', 'string', 'in:land,port'],
             'tags' => ['nullable', 'string', 'max:500'],
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov', 'max:512000'],
             'thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:51200'],
@@ -109,6 +109,13 @@ class UploadWallpaperController extends Controller
             $fileUrl = Storage::url($filePath);
             $fileSizeKb = max(1, (int) round($file->getSize() / 1024));
             $fileMimeType = (string) $file->getMimeType();
+            $fileAbsolutePath = Storage::disk('public')->path($filePath);
+            $resolvedType = isset($validated['type'])
+                ? (int) $validated['type']
+                : $this->detectWallpaperType($fileMimeType);
+            $resolvedOrientation = isset($validated['orientation'])
+                ? (string) $validated['orientation']
+                : $this->detectWallpaperOrientation($fileAbsolutePath, $resolvedType, $fileMimeType);
             $thumbnailSourceRelativePath = null;
             if (!empty($validated['thumbnail'])) {
                 $thumbnailSourceRelativePath = $validated['thumbnail']
@@ -139,8 +146,8 @@ class UploadWallpaperController extends Controller
                         'name' => $validated['name'],
                         'thumbnail' => $thumbnailUrl,
                         'quality_thumbnail' => $qualityThumbnailUrl,
-                        'type' => (int) $validated['type'],
-                        'orientation' => $validated['orientation'],
+                        'type' => $resolvedType,
+                        'orientation' => $resolvedOrientation,
                     ]);
                     break;
                 } catch (UniqueConstraintViolationException $exception) {
@@ -408,6 +415,57 @@ class UploadWallpaperController extends Controller
         }
 
         return max(0, (int) trim((string) $output[0]));
+    }
+
+    private function detectVideoDimensions(string $absolutePath): array
+    {
+        $command = 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 '
+            .escapeshellarg($absolutePath).' 2>NUL';
+
+        $output = [];
+        $exitCode = 1;
+        @exec($command, $output, $exitCode);
+        if ($exitCode !== 0 || empty($output)) {
+            return [0, 0];
+        }
+
+        $raw = trim((string) $output[0]);
+        if (!preg_match('/^(\d+)x(\d+)$/', $raw, $matches)) {
+            return [0, 0];
+        }
+
+        return [(int) $matches[1], (int) $matches[2]];
+    }
+
+    private function detectWallpaperType(string $mimeType): int
+    {
+        return Str::startsWith($mimeType, 'video/') ? 2 : 1;
+    }
+
+    private function detectWallpaperOrientation(string $absolutePath, int $type, string $mimeType): string
+    {
+        if ($type === 2) {
+            [$width, $height] = $this->detectVideoDimensions($absolutePath);
+            if ($width > 0 && $height > 0) {
+                return $width >= $height ? 'land' : 'port';
+            }
+
+            return 'land';
+        }
+
+        [$width, $height] = $this->safeImageSize($absolutePath);
+        if ($width > 0 && $height > 0) {
+            return $width >= $height ? 'land' : 'port';
+        }
+
+        if (Str::startsWith($mimeType, 'video/')) {
+            [$videoWidth, $videoHeight] = $this->detectVideoDimensions($absolutePath);
+            if ($videoWidth > 0 && $videoHeight > 0) {
+                return $videoWidth >= $videoHeight ? 'land' : 'port';
+            }
+        }
+
+        return 'land';
     }
 
     private function normalizeImageMimeType(string $mimeType): string

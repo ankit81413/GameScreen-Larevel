@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'razorpay' => [
+        'key_id' => env('RAZORPAY_KEY_ID'),
+        'key_secret' => env('RAZORPAY_KEY_SECRET'),
+        'currency' => env('RAZORPAY_CURRENCY', 'INR'),
+        'donation_amount_paise' => (int) env('RAZORPAY_DONATION_AMOUNT_PAISE', 4900),
+    ],
+
 ];

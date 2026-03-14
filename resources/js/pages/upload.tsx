@@ -6,8 +6,8 @@ import { showGamingAlert } from '@/lib/gaming-alerts';
 export default function UploadPage() {
     const form = useForm({
         name: '',
-        type: '1',
-        orientation: 'land',
+        type: 'auto',
+        orientation: 'auto',
         tags: '',
         file: null as File | null,
         thumbnail: null as File | null,
@@ -18,12 +18,15 @@ export default function UploadPage() {
     const [showTagSuggestions, setShowTagSuggestions] = useState(false);
     const [useCustomThumbnail, setUseCustomThumbnail] = useState(false);
     const pickingSuggestionRef = useRef(false);
+    const { setData } = form;
 
     const activeTagToken = useMemo(() => tagInput.trim(), [tagInput]);
 
     useEffect(() => {
-        form.setData('tags', selectedTags.join(', '));
-    }, [form, selectedTags]);
+    //     form.setData('tags', selectedTags.join(', '));
+    // }, [form, selectedTags]); 
+        setData('tags', selectedTags.join(', '));
+    }, [selectedTags, setData]);
 
     useEffect(() => {
         const query = activeTagToken.trim().toLowerCase();
@@ -115,6 +118,9 @@ export default function UploadPage() {
         form.transform((data) => ({
             ...data,
             tags: finalTags.join(', '),
+            type: data.type === 'auto' ? null : data.type,
+            orientation:
+                data.orientation === 'auto' ? null : data.orientation,
         }));
         form.post('/upload', {
             forceFormData: true,
@@ -162,6 +168,7 @@ export default function UploadPage() {
                                     value={form.data.type}
                                     onChange={(e) => form.setData('type', e.target.value)}
                                 >
+                                    <option value="auto">Auto detect</option>
                                     <option value="1">Static</option>
                                     <option value="2">Live Wallpaper</option>
                                 </select>
@@ -173,6 +180,7 @@ export default function UploadPage() {
                                     value={form.data.orientation}
                                     onChange={(e) => form.setData('orientation', e.target.value)}
                                 >
+                                    <option value="auto">Auto detect</option>
                                     <option value="land">Landscape</option>
                                     <option value="port">Portrait</option>
                                 </select>

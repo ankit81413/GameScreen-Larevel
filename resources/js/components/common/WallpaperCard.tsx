@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { viewWallpaper } from '@/routes';
 
 const PLAY_EVENT_NAME = 'wallpaper-card-play';
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.m4v'];
 
 type WallpaperCardProps = {
     item: any;
@@ -12,10 +13,23 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
     const is_livewallpaper = item.type === 2;
     const isLandscape = item.orientation === 'land';
     const isProcessing = Boolean(item.processing);
+    const thumbnailUrl = String(item?.thumbnail ?? '');
+    const isProcessingVideoPreview =
+        is_livewallpaper ||
+        VIDEO_EXTENSIONS.some((extension) =>
+            thumbnailUrl.toLowerCase().includes(extension),
+        );
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
     const [isLoadingVideo, setIsLoadingVideo] = useState(false);
     const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+    const [isProcessingPreviewError, setIsProcessingPreviewError] = useState(
+        false,
+    );
+
+    useEffect(() => {
+        setIsProcessingPreviewError(false);
+    }, [item.id, thumbnailUrl]);
 
     const video480pUrl = useMemo(() => {
         const links = Array.isArray(item.links) ? item.links : [];
@@ -169,11 +183,25 @@ export default function WallpaperCard({ item }: WallpaperCardProps) {
             <div className="image">
                 {isProcessing ? (
                     <div>
-                        <img
-                            src={`${item.thumbnail}`}
-                            alt="wallpaper"
-                            id={`wallpaper_${item.id}`}
-                        />
+                        {isProcessingVideoPreview && !isProcessingPreviewError ? (
+                            <video
+                                src={thumbnailUrl}
+                                muted
+                                loop
+                                autoPlay
+                                playsInline
+                                preload="metadata"
+                                id={`wallpaper_${item.id}`}
+                                onError={() => setIsProcessingPreviewError(true)}
+                            />
+                        ) : (
+                            <img
+                                src={thumbnailUrl}
+                                alt="wallpaper"
+                                id={`wallpaper_${item.id}`}
+                                onError={() => setIsProcessingPreviewError(true)}
+                            />
+                        )}
                     </div>
                 ) : (
                     <Link href={viewWallpaper(item.code)}>

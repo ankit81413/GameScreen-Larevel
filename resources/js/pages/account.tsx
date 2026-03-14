@@ -246,6 +246,41 @@ export default function Account() {
         }
     };
 
+    const permanentlyDeleteArchivedWallpaper = async (wallpaperId: number) => {
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`/account/wallpapers/${wallpaperId}/force`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Permanent delete failed');
+            }
+
+            setArchivedWallpapers((current) =>
+                current.filter((item) => item.id !== wallpaperId),
+            );
+
+            showGamingAlert({
+                type: 'warning',
+                title: 'Wallpaper Permanently Deleted',
+                message: 'Wallpaper was removed from archive permanently.',
+            });
+        } catch (_error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Permanent Delete Failed',
+                message: 'Could not permanently delete wallpaper.',
+            });
+        }
+    };
+
     return (
         <>
             <Head title="Account" />
@@ -451,6 +486,17 @@ export default function Account() {
                                                         }
                                                     >
                                                         Restore
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="owned_menu_item danger"
+                                                        onClick={() =>
+                                                            permanentlyDeleteArchivedWallpaper(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        Permanently Delete
                                                     </button>
                                                 </div>
                                             )}

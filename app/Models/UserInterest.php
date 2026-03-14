@@ -10,6 +10,7 @@ class UserInterest extends Model
         'user_id',
         'tag_id',
         'round_number',
+        'interest_weight',
     ];
 
     public function tag()

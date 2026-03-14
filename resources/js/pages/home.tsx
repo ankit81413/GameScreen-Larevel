@@ -14,19 +14,6 @@ import { useFullScreen } from '@/hooks/useFullScreen';
 const BANNER_AUTOPLAY_STORAGE_KEY = 'bannerAutoplayEnabled';
 const DEFAULT_BANNER_VIDEO_URL = 'storage/live_wallpaper/spaceship_720.mp4';
 const DEFAULT_BANNER_POSTER_URL = 'storage/live_wallpaper/spaceShip_thumb.jpeg';
-const LIVE_WALLPAPER_CODES = [
-    '0028',
-    '0029',
-    '0030',
-    '0031',
-    '0032',
-    '0033',
-    '0034',
-    '0035',
-    '0036',
-    '0037',
-    '0038',
-];
 
 export default function Welcome({
     canRegister = true,
@@ -61,11 +48,9 @@ export default function Welcome({
         const controller = new AbortController();
         const fetchBannerWallpapers = async () => {
             try {
-                const query = encodeURIComponent(LIVE_WALLPAPER_CODES.join(','));
-                const response = await fetch(
-                    `/banner-wallpapers?codes=${query}`,
-                    { signal: controller.signal },
-                );
+                const response = await fetch('/banner-wallpapers', {
+                    signal: controller.signal,
+                });
 
                 if (!response.ok) {
                     setBannerWallpapers([]);

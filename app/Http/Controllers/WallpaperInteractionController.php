@@ -24,12 +24,22 @@ class WallpaperInteractionController extends Controller
         $liked = false;
         if ($existing) {
             $existing->delete();
+            app(InterestController::class)->recordWallpaperLike(
+                (int) $user->id,
+                $wallpaper,
+                false,
+            );
         } else {
             WallpaperLike::query()->create([
                 'user_id' => $user->id,
                 'wallpaper_id' => $wallpaper->id,
             ]);
             $liked = true;
+            app(InterestController::class)->recordWallpaperLike(
+                (int) $user->id,
+                $wallpaper,
+                true,
+            );
         }
 
         $likesCount = WallpaperLike::query()
@@ -58,6 +68,11 @@ class WallpaperInteractionController extends Controller
             'comment' => trim($validated['comment']),
         ]);
 
+        app(InterestController::class)->recordWallpaperComment(
+            (int) $request->user()->id,
+            $wallpaper,
+        );
+
         $comment->load('user:id,name,username');
 
         $commentsCount = WallpaperComment::query()
@@ -85,6 +100,14 @@ class WallpaperInteractionController extends Controller
         $user = $request->user();
         if ((int) $comment->user_id !== (int) $user->id) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $wallpaper = Wallpaper::query()->find($comment->wallpaper_id);
+        if ($wallpaper) {
+            app(InterestController::class)->removeWallpaperCommentInterest(
+                (int) $user->id,
+                $wallpaper,
+            );
         }
 
         $wallpaperId = (int) $comment->wallpaper_id;

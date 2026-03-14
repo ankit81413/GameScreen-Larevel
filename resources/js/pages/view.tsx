@@ -53,7 +53,9 @@ export default function Welcome({
     } = usePaginatedList({
         initialData: {
             data: [],
-            next_page_url: '/similar-wallpapers?page=1',
+            next_page_url: `/similar-wallpapers?page=1&wallpaper_code=${encodeURIComponent(
+                String(wallpaper?.code ?? ''),
+            )}`,
         },
     });
     const normalizeQuality = (quality: unknown) => {

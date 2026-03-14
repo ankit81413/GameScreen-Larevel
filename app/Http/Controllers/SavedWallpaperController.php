@@ -22,6 +22,10 @@ class SavedWallpaperController extends Controller
                             $visibility->where('is_private', false)
                                 ->orWhere('owner_id', $user->id);
                         })
+                        ->where(function ($visibility) use ($user) {
+                            $visibility->where('owner_id', $user->id)
+                                ->orWhereHas('links');
+                        })
                         ->with(['links' => function ($linkQuery) {
                             $linkQuery->select(['id', 'wallpaper_id', 'quality', 'url']);
                         }]);
@@ -45,6 +49,12 @@ class SavedWallpaperController extends Controller
             return response()->json([
                 'saved' => false,
                 'message' => 'Private wallpapers cannot be saved.',
+            ], 403);
+        }
+        if (!$wallpaper->links()->exists() && (int) $wallpaper->owner_id !== (int) $user->id) {
+            return response()->json([
+                'saved' => false,
+                'message' => 'Processing wallpapers cannot be saved yet.',
             ], 403);
         }
 

@@ -6,11 +6,20 @@ import { useEffect, useRef, useState } from 'react';
 import Footer from '@/components/includes/Footer';
 import Header from '@/components/includes/Header';
 
+declare global {
+    interface Window {
+        Razorpay?: new (options: Record<string, unknown>) => {
+            open: () => void;
+        };
+    }
+}
+
 export default function Download() {
     const [showDonationBack, setShowDonationBack] = useState(false);
     const { wallpaper, download } = usePage().props as any;
+    const [isDonating, setIsDonating] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [timerText, setTimerText] = useState('took : 0:00s');
+    const [timerText, setTimerText] = useState('starting timer');
     const [decryptingText, setDecryptingText] = useState(
         'Preparing your download...',
     );
@@ -128,12 +137,119 @@ export default function Download() {
         ];
     };
 
+    const getCsrfToken = () =>
+        (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? ''
+        ).trim();
+
+    const loadRazorpayScript = () =>
+        new Promise<boolean>((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+
+            const existingScript = document.querySelector(
+                'script[data-razorpay-checkout="true"]',
+            ) as HTMLScriptElement | null;
+
+            if (existingScript) {
+                existingScript.addEventListener('load', () => resolve(true), {
+                    once: true,
+                });
+                existingScript.addEventListener('error', () => resolve(false), {
+                    once: true,
+                });
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.setAttribute('data-razorpay-checkout', 'true');
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+
+    const handleDonate = async () => {
+        if (isDonating) {
+            return;
+        }
+
+        setIsDonating(true);
+
+        try {
+            const csrfToken = getCsrfToken();
+            const orderResponse = await fetch('/payments/razorpay/order', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({
+                    wallpaper_code: wallpaper?.code ?? null,
+                    _token: csrfToken,
+                }),
+            });
+
+            if (!orderResponse.ok) {
+                throw new Error('Could not create donation order.');
+            }
+
+            const orderData = await orderResponse.json();
+            if (!orderData?.order_id || !orderData?.key) {
+                throw new Error('Invalid Razorpay order response.');
+            }
+
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded || !window.Razorpay) {
+                throw new Error('Razorpay checkout script failed to load.');
+            }
+
+            const razorpay = new window.Razorpay({
+                key: orderData.key,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: orderData.name ?? 'GameScreen',
+                description: orderData.description ?? 'Support the creator',
+                order_id: orderData.order_id,
+                prefill: orderData.prefill ?? {},
+                theme: {
+                    color: '#ff9900',
+                },
+                modal: {
+                    ondismiss: () => {
+                        setIsDonating(false);
+                    },
+                },
+                handler: () => {
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        navigator.vibrate(100);
+                    }
+                    startConfetti();
+                    setIsDonating(false);
+                },
+            });
+
+            razorpay.open();
+        } catch (error) {
+            setIsDonating(false);
+            window.alert('Unable to open payment gateway right now.');
+        }
+    };
+
     useEffect(() => {
         const wallpaperName = wallpaper?.name ?? 'wallpaper';
-        const downloadLink = download?.url ?? '';
+        const downloadLink = download?.force_url ?? '';
 
         setProgress(0);
-        setTimerText('took : 0:00s');
+        setTimerText('starting timer');
         setShowSpinner(true);
         setManualLinkVisible(false);
 
@@ -143,7 +259,7 @@ export default function Download() {
             return;
         }
 
-        const guessedNumber = Math.floor(Math.random() * 5);
+        const guessedNumber = Math.floor(Math.random() * 9) + 2;
         let currentStep = 0;
         const totalSteps = Math.max(guessedNumber * 10, 1);
         let timer = 0;
@@ -183,7 +299,13 @@ export default function Download() {
                 setShowSpinner(false);
                 setManualLinkVisible(true);
                 setProgress(100);
-                triggerDownload(downloadLink, wallpaperName);
+                try {
+                    triggerDownload(downloadLink, wallpaperName);
+                } catch (error) {
+                    setDecryptingText(
+                        "Auto-download failed. Please use the 'Click here' link.",
+                    );
+                }
             }
         }, 1000);
 
@@ -191,7 +313,7 @@ export default function Download() {
             window.clearInterval(intervalHandle);
             timeoutHandles.forEach((handle) => window.clearTimeout(handle));
         };
-    }, [download?.url, wallpaper?.name]);
+    }, [download?.force_url, wallpaper?.name]);
 
     useEffect(() => {
         const canvas = confettiCanvasRef.current;
@@ -393,11 +515,12 @@ export default function Download() {
                                     </h2>
                                     <button
                                         id="donate_button"
-                                        onClick={() =>
-                                            flipDonationCard('donate')
-                                        }
+                                        onClick={handleDonate}
+                                        disabled={isDonating}
                                     >
-                                        Donate
+                                        {isDonating
+                                            ? 'Opening Gateway...'
+                                            : 'Donate'}
                                     </button>
                                     <a
                                         id="follow_button"
@@ -462,7 +585,7 @@ export default function Download() {
                             <h2 id="decrypting_text">{decryptingText}</h2>
                             <span id="download_a">
                                 <a
-                                    href={download?.url ?? '#'}
+                                    href={download?.force_url ?? '#'}
                                     download={wallpaper?.name ?? 'Wallpaper'}
                                     style={{
                                         display: manualLinkVisible

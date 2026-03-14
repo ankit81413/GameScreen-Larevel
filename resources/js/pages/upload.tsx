@@ -6,8 +6,8 @@ import { showGamingAlert } from '@/lib/gaming-alerts';
 export default function UploadPage() {
     const form = useForm({
         name: '',
-        type: '1',
-        orientation: 'land',
+        type: 'auto',
+        orientation: 'auto',
         tags: '',
         file: null as File | null,
         thumbnail: null as File | null,
@@ -16,13 +16,17 @@ export default function UploadPage() {
     const [tagInput, setTagInput] = useState('');
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
     const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+    const [useCustomThumbnail, setUseCustomThumbnail] = useState(false);
     const pickingSuggestionRef = useRef(false);
+    const { setData } = form;
 
     const activeTagToken = useMemo(() => tagInput.trim(), [tagInput]);
 
     useEffect(() => {
-        form.setData('tags', selectedTags.join(', '));
-    }, [selectedTags]);
+    //     form.setData('tags', selectedTags.join(', '));
+    // }, [form, selectedTags]); 
+        setData('tags', selectedTags.join(', '));
+    }, [selectedTags, setData]);
 
     useEffect(() => {
         const query = activeTagToken.trim().toLowerCase();
@@ -42,7 +46,7 @@ export default function UploadPage() {
                 );
                 const data = await response.json();
                 setTagSuggestions(Array.isArray(data) ? data : []);
-            } catch (error) {
+            } catch (_error) {
                 setTagSuggestions([]);
             }
         }, 150);
@@ -114,14 +118,17 @@ export default function UploadPage() {
         form.transform((data) => ({
             ...data,
             tags: finalTags.join(', '),
+            type: data.type === 'auto' ? null : data.type,
+            orientation:
+                data.orientation === 'auto' ? null : data.orientation,
         }));
         form.post('/upload', {
             forceFormData: true,
             onSuccess: () =>
                 showGamingAlert({
                     type: 'success',
-                    title: 'Upload Complete',
-                    message: 'Wallpaper uploaded successfully.',
+                    title: 'Upload Started',
+                    message: 'Wallpaper uploaded. Quality copies are processing in the background.',
                 }),
             onError: () =>
                 showGamingAlert({
@@ -161,6 +168,7 @@ export default function UploadPage() {
                                     value={form.data.type}
                                     onChange={(e) => form.setData('type', e.target.value)}
                                 >
+                                    <option value="auto">Auto detect</option>
                                     <option value="1">Static</option>
                                     <option value="2">Live Wallpaper</option>
                                 </select>
@@ -172,6 +180,7 @@ export default function UploadPage() {
                                     value={form.data.orientation}
                                     onChange={(e) => form.setData('orientation', e.target.value)}
                                 >
+                                    <option value="auto">Auto detect</option>
                                     <option value="land">Landscape</option>
                                     <option value="port">Portrait</option>
                                 </select>
@@ -273,14 +282,29 @@ export default function UploadPage() {
                             </label>
 
                             <label className="full">
-                                <span>Thumbnail (optional for videos)</span>
-                                <input
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.webp"
-                                    onChange={(e) =>
-                                        form.setData('thumbnail', e.target.files?.[0] ?? null)
-                                    }
-                                />
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={useCustomThumbnail}
+                                        onChange={(event) => {
+                                            const checked = event.target.checked;
+                                            setUseCustomThumbnail(checked);
+                                            if (!checked) {
+                                                form.setData('thumbnail', null);
+                                            }
+                                        }}
+                                    />
+                                    Upload custom thumbnail
+                                </span>
+                                {useCustomThumbnail && (
+                                    <input
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.webp"
+                                        onChange={(e) =>
+                                            form.setData('thumbnail', e.target.files?.[0] ?? null)
+                                        }
+                                    />
+                                )}
                             </label>
                         </div>
 

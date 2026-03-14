@@ -11,7 +11,7 @@ use App\Http\Controllers\UploadWallpaperController;
 use App\Http\Controllers\SimilarWallpaperController;
 use App\Http\Controllers\ViewPageController;
 use App\Http\Controllers\DownloadController;
-use App\Http\Controllers\OnboardingInterestController;
+use App\Http\Controllers\InterestController;
 use App\Http\Controllers\OnboardingProfileController;
 use App\Http\Controllers\SearchHistoryController;
 use App\Http\Controllers\SearchSuggestionController;
@@ -20,6 +20,7 @@ use App\Http\Controllers\SavedWallpaperController;
 use App\Http\Controllers\TagSuggestionController;
 use App\Http\Controllers\WallpaperInteractionController;
 use App\Http\Controllers\WallpaperManageController;
+use App\Http\Controllers\RazorpayDonationController;
 
 // Route::get('/', function () {
 //     return Inertia::render('home', [
@@ -28,10 +29,6 @@ use App\Http\Controllers\WallpaperManageController;
 // })->name('home');
 
 
-Route::get('/', [HomeController::class,'index'])->name('home');
-Route::get('/wallpapers', [HomeController::class, 'Loadmore'])->name('wallpapers.paginate');
-Route::get('/banner-wallpapers', [BannerWallpaperController::class, 'index'])->name('banner.wallpapers');
-Route::get('/similar-wallpapers', [SimilarWallpaperController::class, 'index'])->name('similar.wallpapers');
 Route::middleware('auth')->group(function () {
     Route::get('/search-history', [SearchHistoryController::class, 'index'])->name('search.history.index');
     Route::post('/search-history', [SearchHistoryController::class, 'store'])->name('search.history.store');
@@ -41,25 +38,31 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-wallpapers-archived', [UploadWallpaperController::class, 'mineArchived'])->name('upload.mine.archived');
     Route::get('/onboarding/profile', [OnboardingProfileController::class, 'show'])->name('onboarding.profile.show');
     Route::post('/onboarding/profile', [OnboardingProfileController::class, 'store'])->name('onboarding.profile.store');
-    Route::get('/onboarding/interests', [OnboardingInterestController::class, 'show'])->name('onboarding.interests.show');
-    Route::post('/onboarding/interests', [OnboardingInterestController::class, 'store'])->name('onboarding.interests.store');
-    Route::get('/onboarding/my-interests', [OnboardingInterestController::class, 'myInterests'])->name('onboarding.interests.mine');
-    Route::delete('/onboarding/my-interests/{interest}', [OnboardingInterestController::class, 'destroy'])->name('onboarding.interests.destroy');
+    Route::get('/onboarding/interests', [InterestController::class, 'show'])->name('onboarding.interests.show');
+    Route::post('/onboarding/interests', [InterestController::class, 'store'])->name('onboarding.interests.store');
+    Route::get('/onboarding/my-interests', [InterestController::class, 'myInterests'])->name('onboarding.interests.mine');
+    Route::delete('/onboarding/my-interests/{interest}', [InterestController::class, 'destroy'])->name('onboarding.interests.destroy');
 });
+Route::get('/', [HomeController::class,'index'])->middleware('ensure.interests')->name('home');
+Route::get('/wallpapers', [HomeController::class, 'Loadmore'])->middleware('ensure.interests')->name('wallpapers.paginate');
+Route::get('/banner-wallpapers', [BannerWallpaperController::class, 'index'])->middleware('ensure.interests')->name('banner.wallpapers');
+Route::get('/similar-wallpapers', [SimilarWallpaperController::class, 'index'])->middleware('ensure.interests')->name('similar.wallpapers');
 Route::get('/search-suggestions', [SearchSuggestionController::class, 'index'])->name('search.suggestions');
 Route::get('/tag-suggestions', [TagSuggestionController::class, 'index'])->name('tag.suggestions');
 Route::get('/auto-search', [AutoSearchController::class, 'index'])->name('auto-search');
 Route::get('/auto-search/wallpapers', [AutoSearchController::class, 'loadmore'])->name('auto-search.paginate');
 Route::get('/download/{code}', [DownloadController::class, 'download'])->name('download');
+Route::get('/download/{code}/file', [DownloadController::class, 'file'])->name('download.file');
+Route::post('/payments/razorpay/order', [RazorpayDonationController::class, 'createOrder'])->name('payments.razorpay.order');
 Route::get('/view/{code}',[ViewPageController::class,'view'])->name('viewWallpaper');
 Route::get('/account', function () {
     return Inertia::render('account');
 })->middleware(['auth'])->name('account');
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'ensure.interests'])->group(function () {
     Route::get('/upload', [UploadWallpaperController::class, 'show'])->name('upload.show');
     Route::post('/upload', [UploadWallpaperController::class, 'store'])->name('upload.store');
     Route::get('/account/edit-profile', [AccountSettingsController::class, 'editProfile'])->name('account.profile.edit');
-    Route::patch('/account/edit-profile', [AccountSettingsController::class, 'updateProfile'])->name('account.profile.update');
+    Route::patch('/account/edit-sii', [AccountSettingsController::class, 'updateProfile'])->name('account.profile.update');
     Route::get('/account/change-password', [AccountSettingsController::class, 'editPassword'])->name('account.password.edit');
     Route::put('/account/change-password', [AccountSettingsController::class, 'updatePassword'])->name('account.password.update');
     Route::get('/account/delete-account', [AccountSettingsController::class, 'deleteAccount'])->name('account.delete.edit');
@@ -68,6 +71,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/account/wallpapers/{wallpaper}', [WallpaperManageController::class, 'update'])->name('account.wallpapers.update');
     Route::patch('/account/wallpapers/{wallpaper}/privacy', [WallpaperManageController::class, 'togglePrivacy'])->name('account.wallpapers.privacy');
     Route::delete('/account/wallpapers/{wallpaper}', [WallpaperManageController::class, 'destroy'])->name('account.wallpapers.destroy');
+    Route::delete('/account/wallpapers/{wallpaper}/force', [WallpaperManageController::class, 'forceDestroy'])->name('account.wallpapers.force-destroy');
     Route::post('/account/wallpapers/{wallpaper}/restore', [WallpaperManageController::class, 'restore'])->name('account.wallpapers.restore');
     Route::post('/wallpapers/{wallpaper}/like', [WallpaperInteractionController::class, 'toggleLike'])->name('wallpapers.like');
     Route::post('/wallpapers/{wallpaper}/comments', [WallpaperInteractionController::class, 'storeComment'])->name('wallpapers.comments.store');

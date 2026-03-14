@@ -26,6 +26,7 @@ type OwnedWallpaperItem = {
     type?: number;
     is_private?: boolean;
     deleted_at?: string | null;
+    processing?: boolean;
     orientation?: 'land' | 'port';
     links?: Array<{ quality?: string | number; url?: string }>;
 };
@@ -41,48 +42,66 @@ export default function Account() {
     const [savedWallpapers, setSavedWallpapers] = useState<SavedWallpaperItem[]>([]);
     const [archivedWallpapers, setArchivedWallpapers] = useState<OwnedWallpaperItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshingProcessing, setIsRefreshingProcessing] = useState(false);
 
-    useEffect(() => {
-        const loadAccountData = async () => {
+    const loadAccountData = async (showLoadingState = false) => {
+        if (showLoadingState) {
             setIsLoading(true);
-            try {
-                const [ownedResponse, savedResponse, archivedResponse] = await Promise.all([
-                        fetch('/my-wallpapers', {
-                            headers: { Accept: 'application/json' },
-                            credentials: 'same-origin',
-                        }),
-                        fetch('/saved-wallpapers', {
-                            headers: { Accept: 'application/json' },
-                            credentials: 'same-origin',
-                        }),
-                        fetch('/my-wallpapers-archived', {
-                            headers: { Accept: 'application/json' },
-                            credentials: 'same-origin',
-                        }),
-                    ]);
+        }
 
-                const ownedJson = ownedResponse.ok ? await ownedResponse.json() : [];
-                const savedJson = savedResponse.ok ? await savedResponse.json() : { data: [] };
-                const archivedJson = archivedResponse.ok ? await archivedResponse.json() : [];
+        try {
+            const [ownedResponse, savedResponse, archivedResponse] = await Promise.all([
+                fetch('/my-wallpapers', {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                }),
+                fetch('/saved-wallpapers', {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                }),
+                fetch('/my-wallpapers-archived', {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                }),
+            ]);
 
-                setOwnedWallpapers(Array.isArray(ownedJson) ? ownedJson : []);
-                setSavedWallpapers(
-                    Array.isArray(savedJson?.data) ? savedJson.data : [],
-                );
-                setArchivedWallpapers(Array.isArray(archivedJson) ? archivedJson : []);
-            } catch (error) {
-                showGamingAlert({
-                    type: 'error',
-                    title: 'Account Load Failed',
-                    message: 'Could not load your latest account data.',
-                });
-            } finally {
+            const ownedJson = ownedResponse.ok ? await ownedResponse.json() : [];
+            const savedJson = savedResponse.ok ? await savedResponse.json() : { data: [] };
+            const archivedJson = archivedResponse.ok ? await archivedResponse.json() : [];
+
+            setOwnedWallpapers(Array.isArray(ownedJson) ? ownedJson : []);
+            setSavedWallpapers(Array.isArray(savedJson?.data) ? savedJson.data : []);
+            setArchivedWallpapers(Array.isArray(archivedJson) ? archivedJson : []);
+        } catch (_error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Account Load Failed',
+                message: 'Could not load your latest account data.',
+            });
+        } finally {
+            if (showLoadingState) {
                 setIsLoading(false);
             }
-        };
+        }
+    };
 
-        loadAccountData();
+    useEffect(() => {
+        loadAccountData(true);
     }, []);
+
+    useEffect(() => {
+        if (!ownedWallpapers.some((item) => item.processing)) {
+            return;
+        }
+
+        const intervalId = window.setInterval(async () => {
+            setIsRefreshingProcessing(true);
+            await loadAccountData(false);
+            setIsRefreshingProcessing(false);
+        }, 5000);
+
+        return () => window.clearInterval(intervalId);
+    }, [ownedWallpapers]);
 
     useEffect(() => {
         const handleWindowClick = () => {
@@ -133,7 +152,7 @@ export default function Account() {
                     ? 'Wallpaper is now private.'
                     : 'Wallpaper is now public.',
             });
-        } catch (error) {
+        } catch (_error) {
             showGamingAlert({
                 type: 'error',
                 title: 'Action Failed',
@@ -141,6 +160,8 @@ export default function Account() {
             });
         }
     };
+
+    const processingCount = ownedWallpapers.filter((item) => item.processing).length;
 
     const deleteOwnedWallpaper = async (wallpaperId: number) => {
         try {
@@ -174,7 +195,7 @@ export default function Account() {
                 title: 'Wallpaper Deleted',
                 message: 'Wallpaper moved to archive.',
             });
-        } catch (error) {
+        } catch (_error) {
             showGamingAlert({
                 type: 'error',
                 title: 'Delete Failed',
@@ -216,11 +237,46 @@ export default function Account() {
                 title: 'Wallpaper Restored',
                 message: 'Wallpaper restored from archive.',
             });
-        } catch (error) {
+        } catch (_error) {
             showGamingAlert({
                 type: 'error',
                 title: 'Restore Failed',
                 message: 'Could not restore wallpaper.',
+            });
+        }
+    };
+
+    const permanentlyDeleteArchivedWallpaper = async (wallpaperId: number) => {
+        try {
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`/account/wallpapers/${wallpaperId}/force`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Permanent delete failed');
+            }
+
+            setArchivedWallpapers((current) =>
+                current.filter((item) => item.id !== wallpaperId),
+            );
+
+            showGamingAlert({
+                type: 'warning',
+                title: 'Wallpaper Permanently Deleted',
+                message: 'Wallpaper was removed from archive permanently.',
+            });
+        } catch (_error) {
+            showGamingAlert({
+                type: 'error',
+                title: 'Permanent Delete Failed',
+                message: 'Could not permanently delete wallpaper.',
             });
         }
     };
@@ -302,6 +358,21 @@ export default function Account() {
                             Archive ({archivedWallpapers.length})
                         </button>
                     </div>
+
+                    {processingCount > 0 && (
+                        <div className="account_processing_notice">
+                            <div>
+                                <strong>
+                                    {processingCount} upload{processingCount > 1 ? 's are' : ' is'} still processing
+                                </strong>
+                                <p>
+                                    Quality variants and thumbnails are being generated in the
+                                    background.
+                                </p>
+                            </div>
+                            <span>{isRefreshingProcessing ? 'Refreshing...' : 'Auto-refreshing'}</span>
+                        </div>
+                    )}
 
                     <div className="panel panel_full">
                         {isLoading ? (
@@ -415,6 +486,17 @@ export default function Account() {
                                                         }
                                                     >
                                                         Restore
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="owned_menu_item danger"
+                                                        onClick={() =>
+                                                            permanentlyDeleteArchivedWallpaper(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        Permanently Delete
                                                     </button>
                                                 </div>
                                             )}

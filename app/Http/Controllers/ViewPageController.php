@@ -12,18 +12,21 @@ use App\Models\Wallpaper;
 
 class ViewPageController extends Controller
 {
-    // public function view($id){
-    //     return $id;
-    // }
-
     public function view(Request $request, $code){
 
         $wallpaper = Wallpaper::where('code', $code)
             ->where(function ($query) use ($request) {
-                $query->where('is_private', false);
                 if ($request->user()) {
-                    $query->orWhere('owner_id', $request->user()->id);
+                    $query->where('owner_id', $request->user()->id)
+                        ->orWhere(function ($publicQuery) {
+                            $publicQuery->where('is_private', false)
+                                ->whereHas('links');
+                        });
+                    return;
                 }
+
+                $query->where('is_private', false)
+                    ->whereHas('links');
             })
             ->with([
                 'links',
@@ -31,6 +34,14 @@ class ViewPageController extends Controller
                 'owner:id,name,username',
             ])
             ->firstOrFail();
+
+        if ($request->user()) {
+            app(InterestController::class)->recordWallpaperView(
+                (int) $request->user()->id,
+                $wallpaper,
+            );
+        }
+
         $isSaved = false;
         if ($request->user()) {
             $isSaved = SavedWallpaper::query()

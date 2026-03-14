@@ -65,7 +65,9 @@ class AutoSearchController extends Controller
     public function index(Request $request)
     {
         $searchQuery = (string) $request->query('search', '');
-        $wallpapers = Wallpaper::with(['links', 'tags'])->where('is_private', false);
+        $wallpapers = Wallpaper::with(['links', 'tags'])
+            ->where('is_private', false)
+            ->whereHas('links');
         $wallpapers = $this->applySearchFilter($wallpapers, $searchQuery);
         $wallpapers = $this->applyRelevanceSort($wallpapers, $searchQuery)
             ->paginate(10)
@@ -81,7 +83,9 @@ class AutoSearchController extends Controller
     public function loadmore(Request $request)
     {
         $searchQuery = (string) $request->query('search', '');
-        $wallpapers = Wallpaper::with(['links', 'tags'])->where('is_private', false);
+        $wallpapers = Wallpaper::with(['links', 'tags'])
+            ->where('is_private', false)
+            ->whereHas('links');
         $wallpapers = $this->applySearchFilter($wallpapers, $searchQuery);
         $wallpapers = $this->applyRelevanceSort($wallpapers, $searchQuery)
             ->paginate(10)

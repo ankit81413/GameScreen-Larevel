@@ -2,10 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFullScreen } from '@/hooks/useFullScreen';
 
 const AUTOPLAY_STORAGE_KEY = 'viewWallpaperAutoplay';
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.m4v'];
 
 export default function ViewWallpaperDisplay(props: any) {
-    // console.log(props);
-    const isVideoDisplay = Number(props.type) === 2;
     const preferredQuality = 720;
     const qualityOptions = useMemo(() => {
         const links = Array.isArray(props.links) ? props.links : [];
@@ -30,6 +29,17 @@ export default function ViewWallpaperDisplay(props: any) {
             )
             .sort((a: any, b: any) => b.qualityValue - a.qualityValue);
     }, [props.links]);
+    const isVideoDisplay = useMemo(() => {
+        if (Number(props.type) === 2) {
+            return true;
+        }
+
+        const links = Array.isArray(props.links) ? props.links : [];
+        return links.some((link: any) => {
+            const url = String(link?.url ?? '').toLowerCase();
+            return VIDEO_EXTENSIONS.some((extension) => url.includes(extension));
+        });
+    }, [props.links, props.type]);
 
     const { toggleFullScreen } = useFullScreen();
     const [isFullscreen, setIsFullscreen] = useState(false);

@@ -81,6 +81,19 @@ class WallpaperManageController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function forceDestroy(Request $request, int $wallpaper)
+    {
+        $item = Wallpaper::onlyTrashed()
+            ->where('id', $wallpaper)
+            ->firstOrFail();
+
+        abort_unless((int) $item->owner_id === (int) $request->user()->id, 403);
+
+        $item->forceDelete();
+
+        return response()->json(['ok' => true]);
+    }
+
     public function restore(Request $request, int $wallpaper)
     {
         $item = Wallpaper::onlyTrashed()

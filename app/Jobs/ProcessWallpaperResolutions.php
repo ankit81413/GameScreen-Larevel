@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Wallpaper;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -36,9 +37,9 @@ class ProcessWallpaperResolutions implements ShouldQueue
 
         $diskName = (string) config('resolution_service.source_disk', 'public');
         $disk = Storage::disk($diskName);
-        $sourceAbsolutePath = $disk->path($this->sourceRelativePath);
-        $thumbnailSourceAbsolutePath = $this->thumbnailSourceRelativePath
-            ? $disk->path($this->thumbnailSourceRelativePath)
+        $sourcePathForService = $this->resolvePathForResolutionService($disk, $this->sourceRelativePath);
+        $thumbnailSourcePathForService = $this->thumbnailSourceRelativePath
+            ? $this->resolvePathForResolutionService($disk, $this->thumbnailSourceRelativePath)
             : null;
 
         $requestToken = (string) config('resolution_service.request_token');
@@ -53,13 +54,23 @@ class ProcessWallpaperResolutions implements ShouldQueue
             ])
             ->post($serviceUrl.'/process', [
                 'wallpaper_id' => $wallpaper->id,
-                'source_path' => $sourceAbsolutePath,
+                'source_path' => $sourcePathForService,
                 'source_relative_path' => $this->sourceRelativePath,
                 'source_mime_type' => $this->sourceMimeType,
-                'thumbnail_source_path' => $thumbnailSourceAbsolutePath,
+                'thumbnail_source_path' => $thumbnailSourcePathForService,
                 'callback_url' => $callbackUrl,
                 'callback_token' => $callbackToken,
             ])->throw();
     }
-}
 
+    private function resolvePathForResolutionService(FilesystemAdapter $disk, string $relativePath): string
+    {
+        $raw = (string) $disk->url($relativePath);
+        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            return $raw;
+        }
+
+        $appUrl = rtrim((string) config('app.url'), '/');
+        return $appUrl.'/'.ltrim($raw, '/');
+    }
+}

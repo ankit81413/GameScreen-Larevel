@@ -8,6 +8,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install pdo_mysql zip
+RUN { \
+    echo "upload_max_filesize=512M"; \
+    echo "post_max_size=512M"; \
+    echo "max_file_uploads=50"; \
+    echo "max_execution_time=600"; \
+    echo "max_input_time=600"; \
+    echo "memory_limit=512M"; \
+} > /usr/local/etc/php/conf.d/uploads.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY --from=node:20-bookworm-slim /usr/local/bin/node /usr/local/bin/node
@@ -32,6 +40,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install pdo_mysql zip
+RUN { \
+    echo "upload_max_filesize=512M"; \
+    echo "post_max_size=512M"; \
+    echo "max_file_uploads=50"; \
+    echo "max_execution_time=600"; \
+    echo "max_input_time=600"; \
+    echo "memory_limit=512M"; \
+} > /usr/local/etc/php/conf.d/uploads.ini
 
 COPY --from=app-builder /var/www /var/www
 

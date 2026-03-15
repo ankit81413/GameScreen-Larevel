@@ -35,6 +35,8 @@ RUN docker-php-ext-install pdo_mysql zip
 
 COPY --from=app-builder /var/www /var/www
 
+RUN php artisan storage:link --force
+
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
